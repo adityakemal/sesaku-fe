@@ -11,9 +11,13 @@ RUN bun run build
 # ===== Production stage (nginx) =====
 FROM nginx:alpine
 
-# hapus default config (optional tapi bagus)
-RUN rm -rf /usr/share/nginx/html/*
+# hapus default nginx config
+RUN rm /etc/nginx/conf.d/default.conf
 
+# copy config kita
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# copy hasil build
 COPY --from=builder /app/dist /usr/share/nginx/html
 
 EXPOSE 80
