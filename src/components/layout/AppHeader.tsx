@@ -1,0 +1,38 @@
+
+import { DateRangePicker, type DateRange } from '../DatePicker';
+
+interface AppHeaderProps {
+  title: string;
+  isShowDatepicker?: boolean;
+  dateRange?: DateRange;
+  onRangeChange?: (range: DateRange) => void;
+}
+
+export function AppHeader({
+  title,
+  isShowDatepicker = true,
+  dateRange,
+  onRangeChange,
+}: AppHeaderProps) {
+  return (
+    <header
+      className="flex justify-between items-center sticky top-0 z-30 -mx-4 px-4 py-3"
+      style={{
+        background: "var(--black)",
+        borderBottom: "1px solid var(--border)",
+      }}
+    >
+      <h1
+        className="font-display text-2xl md:text-4xl font-bold"
+        style={{ color: 'var(--text-display)' }}
+      >
+        {title}
+      </h1>
+      <div className="flex items-center gap-2">
+        {isShowDatepicker && dateRange && onRangeChange && (
+          <DateRangePicker range={dateRange} onChange={onRangeChange} />
+        )}
+      </div>
+    </header>
+  );
+}
