@@ -21,9 +21,9 @@ RUN bun run build
 RUN ls -la dist
 
 # Gunakan port 5073
-EXPOSE 5073
+EXPOSE 5173
 
 # Jalankan server statis menggunakan bunx serve
 # -s : SPA mode (untuk React Router agar tidak 404 saat refresh)
 # -l : Listen port
-CMD ["bunx", "serve", "-s", "dist", "-l", "5073"]
+CMD ["bunx", "serve", "-s", "dist", "-l", "5173", "--host", "0.0.0.0"]
