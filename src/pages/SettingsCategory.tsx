@@ -11,10 +11,6 @@ import type { Category } from "@/types";
 
 const MAX_CATEGORIES = 7;
 
-function sync(store: ReturnType<typeof useStorageStore.getState>) {
-  getCategories().then((res) => store.setListCategory(res.data));
-}
-
 export default function SettingsCategory() {
   const queryClient = useQueryClient();
   const listCategory = useStorageStore((s) => s.listCategory);
@@ -28,13 +24,10 @@ export default function SettingsCategory() {
     }),
   });
 
-  const store = useStorageStore;
-
   const addMutation = useMutation({
     mutationFn: (name: string) => createCategory(name),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["categories-list"] });
-      sync(store.getState());
     },
     onError: (err: any) => {
       setModalError(err.response?.data?.message || "Gagal menambah kategori");
@@ -45,7 +38,6 @@ export default function SettingsCategory() {
     mutationFn: ({ id, name }: { id: number; name: string }) => updateCategory(id, name),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["categories-list"] });
-      sync(store.getState());
     },
     onError: (err: any) => {
       setModalError(err.response?.data?.message || "Gagal mengedit kategori");
@@ -56,10 +48,9 @@ export default function SettingsCategory() {
     mutationFn: (id: number) => deleteCategory(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["categories-list"] });
-      sync(store.getState());
     },
     onError: (err: any) => {
-      setModalError(err.response?.data?.message || "Gagal menghapus kategori");
+      setModalError(err.response?.data?.message || "Gagal menambah kategori");
     },
   });
 

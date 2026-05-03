@@ -1,29 +1,24 @@
 import { useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { BottomNav } from '@/components/layout/BottomNav';
-import { AppHeader } from '@/components/layout/AppHeader';
-import { PageLayout } from '@/components/layout/PageLayout';
-import { checkSession, logoutUser } from '@/api/authApi';
-import { useBudgetStore } from '@/store/budget';
-import { useStorageStore } from '@/store/storage';
-import { useTheme } from '@/hooks/useTheme';
+import { useQueryClient } from "@tanstack/react-query";
+import { BottomNav } from "@/components/layout/BottomNav";
+import { AppHeader } from "@/components/layout/AppHeader";
+import { PageLayout } from "@/components/layout/PageLayout";
+import { logoutUser } from "@/api/authApi";
+import { useBudgetStore } from "@/store/budget";
+import { useStorageStore } from "@/store/storage";
+import { useTheme } from "@/hooks/useTheme";
 
 export default function SettingsPage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { darkMode, toggle: toggleTheme } = useTheme();
   const resetStore = useBudgetStore((s) => s.resetStore);
   const user = useStorageStore((s) => s.user);
   const setUser = useStorageStore((s) => s.setUser);
 
-  useQuery({
-    queryKey: ["session"],
-    queryFn: () => checkSession().then((res) => res.data),
-    staleTime: Infinity,
-    retry: false,
-  });
-
   const handleLogout = async () => {
     await logoutUser();
+    queryClient.clear();
     resetStore();
     setUser(null);
     navigate("/login");
@@ -37,7 +32,10 @@ export default function SettingsPage() {
         {user && (
           <section
             className="p-4 rounded-xl flex items-center gap-4"
-            style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
+            style={{
+              background: "var(--surface)",
+              border: "1px solid var(--border)",
+            }}
           >
             {user.avatar ? (
               <img
@@ -72,12 +70,12 @@ export default function SettingsPage() {
               onClick={toggleTheme}
               className="w-9 h-9 flex items-center justify-center rounded-lg flex-shrink-0"
               style={{
-                border: '1px solid var(--border-visible)',
-                color: 'var(--text-secondary)',
-                background: 'transparent',
+                border: "1px solid var(--border-visible)",
+                color: "var(--text-secondary)",
+                background: "transparent",
               }}
             >
-              {darkMode ? '☀' : '☾'}
+              {darkMode ? "☀" : "☾"}
             </button>
           </section>
         )}
@@ -92,7 +90,16 @@ export default function SettingsPage() {
           >
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-full bg-[var(--surface-hover)] flex items-center justify-center text-[var(--text-secondary)]">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
                   <line x1="8" y1="6" x2="21" y2="6"></line>
                   <line x1="8" y1="12" x2="21" y2="12"></line>
                   <line x1="8" y1="18" x2="21" y2="18"></line>
@@ -101,11 +108,23 @@ export default function SettingsPage() {
                   <line x1="3" y1="18" x2="3.01" y2="18"></line>
                 </svg>
               </div>
-              <span className="font-medium" style={{ color: "var(--text-display)" }}>
+              <span
+                className="font-medium"
+                style={{ color: "var(--text-display)" }}
+              >
                 Atur Kategori
               </span>
             </div>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="var(--text-secondary)"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <polyline points="9 18 15 12 9 6"></polyline>
             </svg>
           </button>
@@ -121,16 +140,37 @@ export default function SettingsPage() {
           >
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-full bg-[var(--surface-hover)] flex items-center justify-center text-[var(--text-secondary)]">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
                   <circle cx="12" cy="12" r="10"></circle>
                   <polyline points="12 6 12 12 16 14"></polyline>
                 </svg>
               </div>
-              <span className="font-medium" style={{ color: "var(--text-display)" }}>
+              <span
+                className="font-medium"
+                style={{ color: "var(--text-display)" }}
+              >
                 Riwayat Aktivitas
               </span>
             </div>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="var(--text-secondary)"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <polyline points="9 18 15 12 9 6"></polyline>
             </svg>
           </button>
@@ -140,7 +180,16 @@ export default function SettingsPage() {
           >
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-full bg-red-500/10 flex items-center justify-center text-red-500">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
                   <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
                   <polyline points="16 17 21 12 16 7"></polyline>
                   <line x1="21" y1="12" x2="9" y2="12"></line>
@@ -155,36 +204,81 @@ export default function SettingsPage() {
           <h2 className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider pl-2">
             Informasi
           </h2>
-          <div className="overflow-hidden divide-y divide-[var(--border)] rounded-xl" style={{ border: "1px solid var(--border)" }}>
+          <div
+            className="overflow-hidden divide-y divide-[var(--border)] rounded-xl"
+            style={{ border: "1px solid var(--border)" }}
+          >
             <button className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors text-left">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-full bg-[var(--surface)] flex items-center justify-center text-[var(--text-secondary)]">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
                     <circle cx="12" cy="12" r="10"></circle>
                     <line x1="12" y1="16" x2="12" y2="12"></line>
                     <line x1="12" y1="8" x2="12.01" y2="8"></line>
                   </svg>
                 </div>
-                <span className="font-medium" style={{ color: "var(--text-display)" }}>
+                <span
+                  className="font-medium"
+                  style={{ color: "var(--text-display)" }}
+                >
                   Tentang sesaKu
                 </span>
               </div>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="var(--text-secondary)"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <polyline points="9 18 15 12 9 6"></polyline>
               </svg>
             </button>
             <button className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors text-left">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-full bg-[var(--surface)] flex items-center justify-center text-[var(--text-secondary)]">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
                     <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
                   </svg>
                 </div>
-                <span className="font-medium" style={{ color: "var(--text-display)" }}>
+                <span
+                  className="font-medium"
+                  style={{ color: "var(--text-display)" }}
+                >
                   Bantuan & Dukungan
                 </span>
               </div>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="var(--text-secondary)"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <polyline points="9 18 15 12 9 6"></polyline>
               </svg>
             </button>

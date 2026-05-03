@@ -34,8 +34,10 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
         name: data.name,
         avatar: data.avatar || "",
       });
-      getCategories().then((res) => setListCategory(res.data));
       if (!initialized) {
+        getCategories()
+          .then((res) => setListCategory(res.data))
+          .catch(() => {});
         resetStore();
         initStore();
       }

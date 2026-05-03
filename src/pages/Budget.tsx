@@ -59,7 +59,10 @@ export default function BudgetPage() {
           </p>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => { setShowAddModal(true); setAddKey((k) => k + 1); }}
+              onClick={() => {
+                setShowAddModal(true);
+                setAddKey((k) => k + 1);
+              }}
               className="h-8 px-3 text-[12px] font-bold rounded-lg flex items-center gap-1.5 transition-opacity hover:opacity-80"
               style={{
                 background: "var(--accent)",

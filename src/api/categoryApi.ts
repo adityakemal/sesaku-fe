@@ -1,15 +1,12 @@
 import { apiClient } from "./client";
 
-export const getCategories = () => apiClient.get("/categories");
+export const getCategories = () => apiClient.get("/category");
 
 export const createCategory = (name: string) =>
-  apiClient.post("/categories", { name });
+  apiClient.post("/category", { name });
 
 export const updateCategory = (id: number, name: string) =>
-  apiClient.put(`/categories/${id}`, { name });
+  apiClient.put(`/category/${id}`, { name });
 
 export const deleteCategory = (id: number) =>
-  apiClient.delete(`/categories/${id}`);
-
-export const deleteCategoryByName = (name: string) =>
-  apiClient.delete(`/categories/name/${encodeURIComponent(name)}`);
+  apiClient.delete(`/category/${id}`);

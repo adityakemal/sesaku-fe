@@ -1,10 +1,13 @@
-
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import dayjs from "dayjs";
-import { CategoryChart, WeeklyChart, SavingsChart } from '@/components/charts/Charts';
-import { BottomNav } from '@/components/layout/BottomNav';
-import { AppHeader } from '@/components/layout/AppHeader';
-import { PageLayout } from '@/components/layout/PageLayout';
+import {
+  CategoryChart,
+  WeeklyChart,
+  SavingsChart,
+} from "@/components/charts/Charts";
+import { BottomNav } from "@/components/layout/BottomNav";
+import { AppHeader } from "@/components/layout/AppHeader";
+import { PageLayout } from "@/components/layout/PageLayout";
 import { useTheme } from "@/hooks/useTheme";
 import { useBudgetStore } from "@/store/budget";
 import { useStorageStore } from "@/store/storage";
@@ -18,18 +21,15 @@ export default function Home() {
     const now = dayjs();
     return { start: now.startOf("month").toDate(), end: now.toDate() };
   });
-  const {
-    transactions,
-    getBudgetForMonth,
-    budgetEntries,
-  } = useBudgetStore();
+  const { transactions, getBudgetForMonth, budgetEntries } =
+    useBudgetStore();
 
   const categories = useStorageStore((s) => s.listCategory).map((c) => c.name);
 
   const start = dayjs(dateRange.start).startOf("day").toDate();
   const end = dayjs(dateRange.end).endOf("day").toDate();
 
-  const budget = useMemo(() => {
+  const budget = (() => {
     const months = new Set<string>();
     let d = dayjs(dateRange.start).startOf("month");
     const endMonth = dayjs(dateRange.end).startOf("month");
@@ -38,7 +38,7 @@ export default function Home() {
       d = d.add(1, "month");
     }
     return [...months].reduce((sum, m) => sum + getBudgetForMonth(m), 0);
-  }, [dateRange, getBudgetForMonth]);
+  })();
   const filteredTransactions = transactions.filter((t) => {
     const d = new Date(t.date);
     return d >= start && d <= end;
@@ -51,10 +51,12 @@ export default function Home() {
   const remaining = budget - totalSpent;
   const progress = budget > 0 ? (totalSpent / budget) * 100 : 0;
 
-  const rangeDays = dayjs(dateRange.end).diff(dayjs(dateRange.start), "day") + 1;
+  const rangeDays =
+    dayjs(dateRange.end).diff(dayjs(dateRange.start), "day") + 1;
   const dailyAvg = rangeDays > 0 ? totalSpent / rangeDays : 0;
   const transactionCount = filteredTransactions.length;
-  const avgPerTransaction = transactionCount > 0 ? totalSpent / transactionCount : 0;
+  const avgPerTransaction =
+    transactionCount > 0 ? totalSpent / transactionCount : 0;
 
   const catTotals: Record<string, number> = {};
   filteredTransactions.forEach((t) => {
@@ -80,12 +82,7 @@ export default function Home() {
       }
     }
     return months;
-  }, [
-    dateRange,
-    transactions,
-    getBudgetForMonth,
-    budgetEntries,
-  ]);
+  }, [dateRange, transactions, getBudgetForMonth, budgetEntries]);
 
   if (!mounted) {
     return (

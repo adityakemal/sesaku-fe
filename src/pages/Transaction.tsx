@@ -30,7 +30,7 @@ export default function TransactionPage() {
   const start = dayjs(dateRange.start).startOf("day").toDate();
   const end = dayjs(dateRange.end).endOf("day").toDate();
 
-  const budget = useMemo(() => {
+  const budget = (() => {
     const months = new Set<string>();
     let d = dayjs(dateRange.start).startOf("month");
     const endMonth = dayjs(dateRange.end).startOf("month");
@@ -39,7 +39,7 @@ export default function TransactionPage() {
       d = d.add(1, "month");
     }
     return [...months].reduce((sum, m) => sum + getBudgetForMonth(m), 0);
-  }, [dateRange, getBudgetForMonth]);
+  })();
   const filteredByRange = useMemo(
     () =>
       transactions.filter((t) => {

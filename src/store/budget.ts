@@ -1,7 +1,11 @@
 import { create } from "zustand";
 import type { BudgetState, Transaction, BudgetEntry } from "@/types";
-import { getState, saveMonthlyBudget } from "@/api/budgetApi";
-import { createTransaction, updateTransaction, deleteTransaction } from "@/api/transactionApi";
+import { getState, getBudget, saveMonthlyBudget } from "@/api/budgetApi";
+import {
+  createTransaction,
+  updateTransaction,
+  deleteTransaction,
+} from "@/api/transactionApi";
 
 export const useBudgetStore = create<BudgetState>()((set, get) => ({
   budgetEntries: [],
@@ -9,19 +13,28 @@ export const useBudgetStore = create<BudgetState>()((set, get) => ({
   initialized: false,
 
   initStore: async () => {
+    let transactions: Transaction[] = [];
+    let budgetEntries: BudgetEntry[] = [];
+
     try {
-      const res = await getState();
-      const data = res.data;
+      const stateRes = await getState();
+      const stateData = stateRes.data;
+      transactions = (stateData.transactions || []).map((tx: any) => ({
+        ...tx,
+        nominal: Number(tx.nominal) || 0,
+        details:
+          typeof tx.details === "string"
+            ? JSON.parse(tx.details)
+            : tx.details || undefined,
+      }));
+    } catch (err) {
+      console.error("Failed to fetch state", err);
+    }
 
-      const transactions: Transaction[] = (data.transactions || []).map(
-        (tx: any) => ({
-          ...tx,
-          nominal: Number(tx.nominal) || 0,
-          details: typeof tx.details === "string" ? JSON.parse(tx.details) : (tx.details || undefined),
-        }),
-      );
-
-      const budgetEntries: BudgetEntry[] = (data.monthlyBudgets || []).map(
+    try {
+      const budgetRes = await getBudget();
+      const budgetData = budgetRes.data;
+      budgetEntries = (budgetData.monthlyBudgets || []).map(
         (b: any, idx: number) => ({
           id: b.id || `budget-${idx}-${b.month}`,
           month: b.month,
@@ -30,16 +43,15 @@ export const useBudgetStore = create<BudgetState>()((set, get) => ({
           createdAt: b.createdAt || new Date().toISOString(),
         }),
       );
-
-      set({
-        transactions,
-        budgetEntries,
-        initialized: true,
-      });
     } catch (err) {
-      console.error("Failed to init store from API", err);
-      set({ initialized: true });
+      console.error("Failed to fetch budget", err);
     }
+
+    set({
+      transactions,
+      budgetEntries,
+      initialized: true,
+    });
   },
 
   resetStore: () => {
@@ -48,6 +60,25 @@ export const useBudgetStore = create<BudgetState>()((set, get) => ({
       budgetEntries: [],
       initialized: false,
     });
+  },
+
+  refreshBudget: async () => {
+    try {
+      const res = await getBudget();
+      const budgetData = res.data;
+      const budgetEntries: BudgetEntry[] = (budgetData.monthlyBudgets || []).map(
+        (b: any, idx: number) => ({
+          id: b.id || `budget-${idx}-${b.month}`,
+          month: b.month,
+          amount: Number(b.amount) || 0,
+          note: b.note || "",
+          createdAt: b.createdAt || new Date().toISOString(),
+        }),
+      );
+      set({ budgetEntries });
+    } catch (err) {
+      console.error("Failed to refresh budget from API", err);
+    }
   },
 
   importData: async (transactions) => {
@@ -119,7 +150,7 @@ export const useBudgetStore = create<BudgetState>()((set, get) => ({
   updateTransaction: (id, updates) => {
     set((s) => ({
       transactions: s.transactions.map((t) =>
-        t.id === id ? { ...t, ...updates } : t
+        t.id === id ? { ...t, ...updates } : t,
       ),
     }));
     const tx = get().transactions.find((t) => t.id === id);

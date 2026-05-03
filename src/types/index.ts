@@ -1,15 +1,15 @@
-export type TransactionSource = 'Web' | 'AI';
+export type TransactionSource = "Web" | "AI";
 
 export interface TaxItem {
   name: string;
   value: number;
-  type: 'percent' | 'fixed';
+  type: "percent" | "fixed";
 }
 
 export interface DiscountItem {
   name: string;
   value: number;
-  type: 'percent' | 'fixed';
+  type: "percent" | "fixed";
 }
 
 export interface TransactionItem {
@@ -61,12 +61,22 @@ export interface BudgetState {
 
   // Budget actions
   getBudgetForMonth: (month: string) => number;
-  addBudgetEntry: (entry: Omit<BudgetEntry, "id" | "createdAt">) => Promise<void>;
-  updateBudgetEntry: (id: string, updates: Partial<Pick<BudgetEntry, "amount" | "note" | "month">>) => void;
+  addBudgetEntry: (
+    entry: Omit<BudgetEntry, "id" | "createdAt">,
+  ) => Promise<void>;
+  updateBudgetEntry: (
+    id: string,
+    updates: Partial<Pick<BudgetEntry, "amount" | "note" | "month">>,
+  ) => void;
   deleteBudgetEntry: (id: string) => void;
 
   // Transaction actions
-  addTransaction: (t: Omit<Transaction, "id" | "date" | "source"> & { source?: TransactionSource; date?: string }) => void;
+  addTransaction: (
+    t: Omit<Transaction, "id" | "date" | "source"> & {
+      source?: TransactionSource;
+      date?: string;
+    },
+  ) => void;
   updateTransaction: (id: string, updates: Partial<Transaction>) => void;
   deleteTransaction: (id: string) => void;
   initStore: () => Promise<void>;
@@ -83,8 +93,18 @@ export const DEFAULT_CATEGORIES = [
 ] as const;
 
 export const MONTHS_ID = [
-  "Januari", "Februari", "Maret", "April", "Mei", "Juni",
-  "Juli", "Agustus", "September", "Oktober", "November", "Desember",
+  "Januari",
+  "Februari",
+  "Maret",
+  "April",
+  "Mei",
+  "Juni",
+  "Juli",
+  "Agustus",
+  "September",
+  "Oktober",
+  "November",
+  "Desember",
 ] as const;
 
 /** Helper to get "YYYY-MM" key from a Date */
