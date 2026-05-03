@@ -98,7 +98,7 @@ export const useBudgetStore = create<BudgetState>()((set, get) => ({
   addTransaction: async (t) => {
     const newTx = {
       ...t,
-      id: t.id || crypto.randomUUID(),
+      id: crypto.randomUUID(),
       nominal: Number(t.nominal) || 0,
       date: t.date || new Date().toISOString(),
       source: t.source || "Web",
