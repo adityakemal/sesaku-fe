@@ -1,29 +1,20 @@
-# Gunakan image bun yang ringan
 FROM oven/bun:1-slim
 
 WORKDIR /app
 
-# Copy file manifest untuk install dependencies
-COPY package.json ./
-# Jika Anda punya bun.lockb, sebaiknya ikut di-copy agar versi package konsisten
-COPY bun.lockb* ./
-
-# Install dependencies
+COPY package.json bun.lockb* ./
 RUN bun install
 
-# Copy semua source code
 COPY . .
-
-# Build aplikasi (output akan berada di folder /dist)
 RUN bun run build
 
-# Pastikan folder dist ada (opsional untuk debugging)
-RUN ls -la dist
+# Install serve untuk menghandle routing SPA (biar refresh tidak 404)
+RUN bun add -g serve
 
-# Gunakan port 5073
-EXPOSE 5173
+# Pakai port 80 (Standard Production)
+EXPOSE 80
 
-# Jalankan server statis menggunakan bunx serve
-# -s : SPA mode (untuk React Router agar tidak 404 saat refresh)
-# -l : Listen port
-CMD ["bunx", "serve", "-s", "dist", "-l", "5173", "--host", "0.0.0.0"]
+# Jalankan server
+# -s : SPA mode (menangani refresh halaman agar tidak 404)
+# -l 80 : Listen di port 80
+CMD ["serve", "-s", "dist", "-l", "80"]
