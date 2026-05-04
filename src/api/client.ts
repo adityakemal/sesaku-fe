@@ -1,15 +1,21 @@
 import axios from "axios";
 
-// Create a configured axios instance
 export const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "/api",
-  withCredentials: true, // Important for sending HttpOnly cookies
+  withCredentials: true,
   headers: {
     "Content-Type": "application/json",
   },
 });
 
-// Response Interceptor
+apiClient.interceptors.request.use((config) => {
+  const workspaceId = localStorage.getItem("sesaku_workspace_id");
+  if (workspaceId) {
+    config.headers["x-workspace-id"] = workspaceId;
+  }
+  return config;
+});
+
 apiClient.interceptors.response.use(
   (response) => {
     // Return the response data directly if needed, or just the response
@@ -24,6 +30,12 @@ apiClient.interceptors.response.use(
       }
     }
     
+    // Handle Forbidden Workspace
+    if (error.response?.status === 403 || error.response?.data?.code === "WORKSPACE_FORBIDDEN") {
+      localStorage.removeItem("sesaku_workspace_id");
+      window.location.href = "/";
+    }
+
     // Reject the promise to trigger React Query's onError
     return Promise.reject(error);
   }

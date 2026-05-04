@@ -1,9 +1,10 @@
 import { useNavigate } from "react-router-dom";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { logoutUser } from "@/api/authApi";
+import { getWorkspaces } from "@/api/memberApi";
 import { useBudgetStore } from "@/store/budget";
 import { useStorageStore } from "@/store/storage";
 import { useTheme } from "@/hooks/useTheme";
@@ -16,11 +17,18 @@ export default function SettingsPage() {
   const user = useStorageStore((s) => s.user);
   const setUser = useStorageStore((s) => s.setUser);
 
+  const { data: workspaces } = useQuery({
+    queryKey: ["workspaces"],
+    queryFn: () => getWorkspaces().then(res => res.data),
+    staleTime: 60 * 1000,
+  });
+
   const handleLogout = async () => {
     await logoutUser();
     queryClient.clear();
     resetStore();
     setUser(null);
+    localStorage.removeItem("sesaku_workspace_id");
     navigate("/login");
   };
 
@@ -82,7 +90,7 @@ export default function SettingsPage() {
 
         <section className="space-y-3">
           <h2 className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider pl-2">
-            Manajemen Kategori
+            Manajemen
           </h2>
           <button
             onClick={() => navigate("/settings/category")}
@@ -90,16 +98,7 @@ export default function SettingsPage() {
           >
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-full bg-[var(--surface-hover)] flex items-center justify-center text-[var(--text-secondary)]">
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="8" y1="6" x2="21" y2="6"></line>
                   <line x1="8" y1="12" x2="21" y2="12"></line>
                   <line x1="8" y1="18" x2="21" y2="18"></line>
@@ -108,26 +107,55 @@ export default function SettingsPage() {
                   <line x1="3" y1="18" x2="3.01" y2="18"></line>
                 </svg>
               </div>
-              <span
-                className="font-medium"
-                style={{ color: "var(--text-display)" }}
-              >
-                Atur Kategori
-              </span>
+              <span className="font-medium" style={{ color: "var(--text-display)" }}>Kategori</span>
             </div>
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="var(--text-secondary)"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="9 18 15 12 9 6"></polyline>
             </svg>
           </button>
+          <button
+            onClick={() => navigate("/settings/member")}
+            className="w-full flex items-center justify-between p-4 hover:bg-[var(--surface-hover)] border border-[var(--border)] rounded-lg transition-colors text-left"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-[var(--surface-hover)] flex items-center justify-center text-[var(--text-secondary)]">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+              </div>
+              <span className="font-medium" style={{ color: "var(--text-display)" }}>Member</span>
+            </div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+          </button>
+          
+          {workspaces && workspaces.length > 1 && (
+            <button
+              onClick={() => window.dispatchEvent(new Event("open-workspace-modal"))}
+              className="w-full flex items-center justify-between p-4 hover:bg-[var(--surface-hover)] border border-[var(--border)] rounded-lg transition-colors text-left"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-[var(--surface-hover)] flex items-center justify-center text-[var(--text-secondary)]">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                    <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+                    <path d="M12 11h4"></path>
+                    <path d="M12 16h4"></path>
+                    <path d="M8 11h.01"></path>
+                    <path d="M8 16h.01"></path>
+                  </svg>
+                </div>
+                <span className="font-medium" style={{ color: "var(--text-display)" }}>Ganti Workspace</span>
+              </div>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </button>
+          )}
         </section>
 
         <section className="space-y-3">

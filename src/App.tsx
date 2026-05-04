@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
@@ -8,10 +8,12 @@ import Budget from "./pages/Budget";
 import Settings from "./pages/Settings";
 import SettingsCategory from "./pages/SettingsCategory";
 import SettingsHistory from "./pages/SettingsHistory";
+import SettingsMember from "./pages/SettingsMember";
 import { checkSession } from "./api/authApi";
 import { getCategories } from "./api/categoryApi";
 import { useBudgetStore } from "./store/budget";
 import { useStorageStore } from "./store/storage";
+import WorkspaceModal from "./components/WorkspaceModal";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { data, isLoading } = useQuery({
@@ -59,12 +61,29 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
 
 function App() {
   const location = useLocation();
+  const user = useStorageStore((s) => s.user);
+  const [showWorkspace, setShowWorkspace] = useState(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [location.pathname]);
 
+  // Check if we need to show the workspace selector on boot
+  useEffect(() => {
+    if (user && !localStorage.getItem("sesaku_workspace_id")) {
+      setShowWorkspace(true);
+    }
+  }, [user]);
+
+  // Listen to a custom event to open the modal from anywhere (e.g. Settings)
+  useEffect(() => {
+    const handleOpen = () => setShowWorkspace(true);
+    window.addEventListener("open-workspace-modal", handleOpen);
+    return () => window.removeEventListener("open-workspace-modal", handleOpen);
+  }, []);
+
   return (
+    <>
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route
@@ -108,6 +127,14 @@ function App() {
         }
       />
       <Route
+        path="/settings/member"
+        element={
+          <PrivateRoute>
+            <SettingsMember />
+          </PrivateRoute>
+        }
+      />
+      <Route
         path="/settings/history"
         element={
           <PrivateRoute>
@@ -116,6 +143,8 @@ function App() {
         }
       />
     </Routes>
+      <WorkspaceModal isOpen={showWorkspace} onClose={() => setShowWorkspace(false)} />
+    </>
   );
 }
 

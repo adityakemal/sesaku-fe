@@ -13,7 +13,10 @@ declare global {
             client_id: string;
             callback: (response: { credential: string }) => void;
           }) => void;
-          renderButton: (element: HTMLElement, config: { theme: string; size: string }) => void;
+          renderButton: (
+            element: HTMLElement,
+            config: { theme: string; size: string },
+          ) => void;
         };
       };
     };
@@ -42,7 +45,7 @@ export default function Login() {
     (response: { credential: string }) => {
       googleCallbackRef.current(response.credential);
     },
-    []
+    [],
   );
 
   useEffect(() => {
@@ -82,9 +85,9 @@ export default function Login() {
   }, [handleGoogleCredential]);
 
   return (
-    <div className="flex items-center justify-center p-4 h-[100dvh] w-full">
+    <div className="flex items-center justify-center p-4 inset-0 fixed w-full">
       <div
-        className="w-full max-w-sm p-8 rounded-2xl shadow-2xl space-y-8"
+        className="w-full max-w-sm p-8  shadow-2xl space-y-8"
         style={{
           background: "var(--surface)",
           border: "1px solid var(--border-visible)",
@@ -95,12 +98,12 @@ export default function Login() {
             onClick={toggleTheme}
             className="absolute -top-2 -right-2 w-9 h-9 flex items-center justify-center rounded-lg"
             style={{
-              border: '1px solid var(--border-visible)',
-              color: 'var(--text-secondary)',
-              background: 'var(--surface)',
+              border: "1px solid var(--border-visible)",
+              color: "var(--text-secondary)",
+              background: "var(--surface)",
             }}
           >
-            {darkMode ? '☀' : '☾'}
+            {darkMode ? "☀" : "☾"}
           </button>
           <h1
             className="text-4xl font-bold font-display"
@@ -118,7 +121,10 @@ export default function Login() {
             <p className="text-[13px]" style={{ color: "var(--warning)" }}>
               Google Client ID belum dikonfigurasi.
             </p>
-            <p className="text-[12px] mt-1" style={{ color: "var(--text-disabled)" }}>
+            <p
+              className="text-[12px] mt-1"
+              style={{ color: "var(--text-disabled)" }}
+            >
               Set VITE_GOOGLE_CLIENT_ID di .env
             </p>
           </div>

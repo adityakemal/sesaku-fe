@@ -118,6 +118,7 @@ export const useBudgetStore = create<BudgetState>()((set, get) => ({
     };
     set((s) => ({
       budgetEntries: [newEntry, ...s.budgetEntries],
+      totalBudget: s.totalBudget + (newEntry.amount || 0),
     }));
     try {
       await saveMonthlyBudget({ id: newEntry.id, date: newEntry.date, amount: newEntry.amount, note: newEntry.note });
@@ -133,17 +134,21 @@ export const useBudgetStore = create<BudgetState>()((set, get) => ({
     const prev = get().budgetEntries.find((e) => e.id === id);
     if (!prev) return;
     const merged = { ...prev, ...updates };
+    const delta = (merged.amount || 0) - (prev.amount || 0);
     set((s) => ({
       budgetEntries: s.budgetEntries.map((e) =>
         e.id === id ? merged : e,
       ),
+      totalBudget: s.totalBudget + delta,
     }));
     await updateBudget(id, { date: merged.date, amount: merged.amount, note: merged.note });
   },
 
   deleteBudgetEntry: async (id) => {
+    const entry = get().budgetEntries.find((e) => e.id === id);
     set((s) => ({
       budgetEntries: s.budgetEntries.filter((e) => e.id !== id),
+      totalBudget: s.totalBudget - (entry?.amount || 0),
     }));
     try {
       await deleteBudget(id);
@@ -162,6 +167,7 @@ export const useBudgetStore = create<BudgetState>()((set, get) => ({
     } as Transaction;
     set((s) => ({
       transactions: [newTx, ...s.transactions],
+      totalTransaction: s.totalTransaction + (newTx.nominal || 0),
     }));
     try {
       await createTransaction(newTx);
@@ -174,18 +180,23 @@ export const useBudgetStore = create<BudgetState>()((set, get) => ({
   },
 
   updateTransaction: (id, updates) => {
+    const prev = get().transactions.find((t) => t.id === id);
+    const delta = prev && updates.nominal != null ? (Number(updates.nominal) || 0) - (prev.nominal || 0) : 0;
     set((s) => ({
       transactions: s.transactions.map((t) =>
         t.id === id ? { ...t, ...updates } : t,
       ),
+      totalTransaction: s.totalTransaction + delta,
     }));
     const tx = get().transactions.find((t) => t.id === id);
     if (tx) updateTransaction(id, tx);
   },
 
   deleteTransaction: (id) => {
+    const tx = get().transactions.find((t) => t.id === id);
     set((s) => ({
       transactions: s.transactions.filter((t) => t.id !== id),
+      totalTransaction: s.totalTransaction - (tx?.nominal || 0),
     }));
     deleteTransaction(id);
   },

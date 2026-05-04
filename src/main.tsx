@@ -34,7 +34,7 @@ createRoot(document.getElementById("root")!).render(
             },
           }}
         />
-        <div className="w-full max-w-4xl mx-auto  min-h-[100dvh] relative flex flex-col bg-[var(--black)] shadow-2xl">
+        <div className="w-full max-w-4xl mx-auto   bg-(--black) ">
           <App />
         </div>
       </BrowserRouter>
