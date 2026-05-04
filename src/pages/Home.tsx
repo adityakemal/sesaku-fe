@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useMemo } from "react";
 import dayjs from "dayjs";
 import {
   CategoryChart,
@@ -13,15 +13,10 @@ import { useBudgetStore } from "@/store/budget";
 import { useStorageStore } from "@/store/storage";
 import { formatCurrency } from "@/utils";
 import { toMonthKey } from "@/types";
-import type { DateRange } from "@/components/DatePicker";
 
 export default function Home() {
   const { mounted, darkMode, toggle } = useTheme();
-  const [dateRange, setDateRange] = useState<DateRange>(() => {
-    const now = dayjs();
-    return { start: now.startOf("month").toDate(), end: now.toDate() };
-  });
-  const { transactions, getBudgetForMonth, budgetEntries } =
+  const { transactions, getBudgetForMonth, budgetEntries, dateRange, setDateRange } =
     useBudgetStore();
 
   const categories = useStorageStore((s) => s.listCategory).map((c) => c.name);
@@ -29,16 +24,10 @@ export default function Home() {
   const start = dayjs(dateRange.start).startOf("day").toDate();
   const end = dayjs(dateRange.end).endOf("day").toDate();
 
-  const budget = (() => {
-    const months = new Set<string>();
-    let d = dayjs(dateRange.start).startOf("month");
-    const endMonth = dayjs(dateRange.end).startOf("month");
-    while (d.isBefore(endMonth) || d.isSame(endMonth, "month")) {
-      months.add(toMonthKey(d.toDate()));
-      d = d.add(1, "month");
-    }
-    return [...months].reduce((sum, m) => sum + getBudgetForMonth(m), 0);
-  })();
+  const budget = useMemo(
+    () => budgetEntries.reduce((sum, e) => sum + e.amount, 0),
+    [budgetEntries],
+  );
   const filteredTransactions = transactions.filter((t) => {
     const d = new Date(t.date);
     return d >= start && d <= end;

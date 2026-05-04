@@ -47,7 +47,7 @@ export interface MonthlyBudget {
 
 export interface BudgetEntry {
   id: string;
-  month: string; // "YYYY-MM"
+  date: string; // ISO timestamp
   amount: number;
   note: string;
   createdAt: string;
@@ -58,17 +58,19 @@ export interface BudgetState {
   budgetEntries: BudgetEntry[];
   transactions: Transaction[];
   initialized: boolean;
+  dateRange: { start: Date; end: Date };
 
   // Budget actions
   getBudgetForMonth: (month: string) => number;
+  setDateRange: (range: { start: Date; end: Date }) => void;
   addBudgetEntry: (
-    entry: Omit<BudgetEntry, "id" | "createdAt">,
+    entry: Omit<BudgetEntry, "id" | "createdAt" | "date"> & { date?: string },
   ) => Promise<void>;
   updateBudgetEntry: (
     id: string,
-    updates: Partial<Pick<BudgetEntry, "amount" | "note" | "month">>,
-  ) => void;
-  deleteBudgetEntry: (id: string) => void;
+    updates: Partial<Pick<BudgetEntry, "amount" | "note" | "date">>,
+  ) => Promise<void>;
+  deleteBudgetEntry: (id: string) => Promise<void>;
 
   // Transaction actions
   addTransaction: (

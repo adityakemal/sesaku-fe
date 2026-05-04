@@ -4,11 +4,14 @@ import toast from "react-hot-toast";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { PageLayout } from "@/components/layout/PageLayout";
+import {
+  DayPicker,
+  DateRangePicker,
+  type DateRange,
+} from "@/components/DatePicker";
 import { useBudgetStore } from "@/store/budget";
 import { formatCurrency } from "@/utils";
 import type { BudgetEntry } from "@/types";
-import { DayPicker } from "@/components/DatePicker";
-import type { DateRange } from "@/components/DatePicker";
 
 export default function BudgetPage() {
   const {
@@ -17,18 +20,22 @@ export default function BudgetPage() {
     updateBudgetEntry,
     deleteBudgetEntry,
   } = useBudgetStore();
-  const [dateRange, setDateRange] = useState<DateRange>(() => {
-    const now = dayjs();
-    return { start: now.startOf("month").toDate(), end: now.toDate() };
-  });
   const [showAddModal, setShowAddModal] = useState(false);
   const [addKey, setAddKey] = useState(0);
   const [editingEntry, setEditingEntry] = useState<BudgetEntry | null>(null);
   const [deletingEntry, setDeletingEntry] = useState<BudgetEntry | null>(null);
   const [actionMenuOpen, setActionMenuOpen] = useState<string | null>(null);
+  const [filterRange, setFilterRange] = useState<DateRange | null>(null);
 
-  const monthKey = dayjs(dateRange.start).format("YYYY-MM");
-  const monthEntries = budgetEntries.filter((e) => e.month === monthKey);
+  const monthEntries = filterRange
+    ? budgetEntries.filter((e) => {
+        const d = dayjs(e.date);
+        return (
+          d.isAfter(dayjs(filterRange.start).subtract(1, "day")) &&
+          d.isBefore(dayjs(filterRange.end).add(1, "day"))
+        );
+      })
+    : budgetEntries;
   const totalBudget = monthEntries.reduce((sum, e) => sum + e.amount, 0);
 
   const handleDelete = () => {
@@ -40,47 +47,50 @@ export default function BudgetPage() {
 
   return (
     <PageLayout>
-      <AppHeader
-        title="Budget"
-        dateRange={dateRange}
-        onRangeChange={setDateRange}
-      />
+      <AppHeader title="Budget" isShowDatepicker={false} />
+
+      <div className="flex items-center justify-end">
+        <DateRangePicker
+          range={filterRange}
+          onChange={setFilterRange}
+          placeholder="Semua budget"
+          onClear={() => setFilterRange(null)}
+        />
+      </div>
 
       <div
         className="p-4 rounded-xl space-y-4"
         style={{ background: "var(--surface)" }}
       >
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-2">
           <p
             className="text-[16px] font-mono font-bold"
             style={{ color: "var(--accent)" }}
           >
             {formatCurrency(totalBudget)}
           </p>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => {
-                setShowAddModal(true);
-                setAddKey((k) => k + 1);
-              }}
-              className="h-8 px-3 text-[12px] font-bold rounded-lg flex items-center gap-1.5 transition-opacity hover:opacity-80"
-              style={{
-                background: "var(--accent)",
-                color: "white",
-                border: "none",
-              }}
-            >
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                <path
-                  d="M6 2V10M2 6H10"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-              </svg>
-              Tambah
-            </button>
-          </div>
+          <button
+            onClick={() => {
+              setShowAddModal(true);
+              setAddKey((k) => k + 1);
+            }}
+            className="h-8 px-3 text-[12px] font-bold rounded-lg flex items-center gap-1.5 transition-opacity hover:opacity-80"
+            style={{
+              background: "var(--accent)",
+              color: "white",
+              border: "none",
+            }}
+          >
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+              <path
+                d="M6 2V10M2 6H10"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
+            </svg>
+            Tambah
+          </button>
         </div>
 
         {monthEntries.length === 0 ? (
@@ -99,7 +109,7 @@ export default function BudgetPage() {
           >
             <table
               className="w-full text-left border-collapse"
-              style={{ minWidth: "450px" }}
+              // style={{ minWidth: "450px" }}
             >
               <thead>
                 <tr
@@ -112,7 +122,7 @@ export default function BudgetPage() {
                     className="p-3 text-[12px] font-medium"
                     style={{ color: "var(--text-secondary)" }}
                   >
-                    Tanggal
+                    Bulan
                   </th>
                   <th
                     className="p-3 text-[12px] font-medium"
@@ -120,12 +130,12 @@ export default function BudgetPage() {
                   >
                     Nominal
                   </th>
-                  <th
+                  {/* <th
                     className="p-3 text-[12px] font-medium"
                     style={{ color: "var(--text-secondary)" }}
                   >
                     Catatan
-                  </th>
+                  </th> */}
 
                   <th
                     className="p-3 text-[12px] font-medium text-center w-[50px]"
@@ -152,19 +162,18 @@ export default function BudgetPage() {
                         className="text-[12px]"
                         style={{ color: "var(--text-secondary)" }}
                       >
-                        {dayjs(entry.createdAt).format("DD MMM YY")} <br />
-                        {dayjs(entry.createdAt).format("HH:mm")}
+                        {dayjs(entry.date).format("DD MMM YY")}
+                        <br />
+                        {dayjs(entry.date).format("HH:mm")}
                       </span>
                     </td>
                     <td className="p-3">
-                      <span
+                      <p
                         className="text-[13px] font-mono font-bold"
                         style={{ color: "var(--accent)" }}
                       >
                         {formatCurrency(entry.amount)}
-                      </span>
-                    </td>
-                    <td className="p-3">
+                      </p>
                       <span
                         className="text-[12px]"
                         style={{
@@ -176,6 +185,18 @@ export default function BudgetPage() {
                         {entry.note || "—"}
                       </span>
                     </td>
+                    {/* <td className="p-3">
+                      <span
+                        className="text-[12px]"
+                        style={{
+                          color: entry.note
+                            ? "var(--text-secondary)"
+                            : "var(--text-disabled)",
+                        }}
+                      >
+                        {entry.note || "—"}
+                      </span>
+                    </td> */}
 
                     <td className="p-3 relative">
                       <div className="flex items-center justify-center">
@@ -256,10 +277,9 @@ export default function BudgetPage() {
       {showAddModal && (
         <BudgetModal
           key={`add-${addKey}`}
-          defaultMonth={monthKey}
           onSave={async (data) => {
             await addBudgetEntry({
-              month: data.month,
+              date: data.date,
               amount: data.amount,
               note: data.note,
             });
@@ -278,8 +298,7 @@ export default function BudgetPage() {
             updateBudgetEntry(editingEntry.id, {
               amount: data.amount,
               note: data.note,
-              month: data.month,
-            });
+            } as any);
             toast.success("Budget diperbarui");
             setEditingEntry(null);
           }}
@@ -363,19 +382,17 @@ export default function BudgetPage() {
 
 function BudgetModal({
   entry,
-  defaultMonth,
   onSave,
   onClose,
 }: {
   entry?: BudgetEntry;
-  defaultMonth?: string;
-  onSave: (data: { month: string; amount: number; note: string }) => void;
+  onSave: (data: { date: string; amount: number; note: string }) => void;
   onClose: () => void;
 }) {
   const isEdit = !!entry;
   const [date, setDate] = useState(() =>
     entry
-      ? dayjs(entry.createdAt).format("YYYY-MM-DD")
+      ? dayjs(entry.date).format("YYYY-MM-DD")
       : dayjs().format("YYYY-MM-DD"),
   );
   const [nominal, setNominal] = useState(entry ? entry.amount.toString() : "");
@@ -383,7 +400,7 @@ function BudgetModal({
 
   useEffect(() => {
     if (entry) {
-      setDate(dayjs(entry.createdAt).format("YYYY-MM-DD"));
+      setDate(dayjs(entry.date).format("YYYY-MM-DD"));
       setNominal(entry.amount.toString());
       setNote(entry.note || "");
     } else {
@@ -402,8 +419,12 @@ function BudgetModal({
   const handleSave = () => {
     const val = parseInt(nominal.replace(/[^0-9]/g, ""), 10);
     if (!val || val <= 0) return;
-    const month = defaultMonth || dayjs(date).format("YYYY-MM");
-    onSave({ month, amount: val, note: note.trim() });
+    const budgetDate = dayjs(date)
+      .hour(dayjs().hour())
+      .minute(dayjs().minute())
+      .second(dayjs().second())
+      .toISOString();
+    onSave({ date: budgetDate, amount: val, note: note.trim() });
   };
 
   return (
@@ -449,7 +470,7 @@ function BudgetModal({
                 className="block text-[12px] mb-1"
                 style={{ color: "var(--text-secondary)" }}
               >
-                Tanggal
+                Bulan
               </label>
               <DayPicker
                 date={date}

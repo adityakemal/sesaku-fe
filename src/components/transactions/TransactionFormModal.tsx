@@ -277,12 +277,12 @@ export function TransactionFormModal({
   return (
     <>
       <div
-        className="fixed inset-0 z-50 flex items-center justify-center p-4"
+        className="fixed inset-0 z-50 flex items-center justify-center"
         style={{ background: "rgba(0,0,0,0.6)" }}
-        onClick={(e) => e.target === e.currentTarget && onClose()}
+        // onClick={(e) => e.target === e.currentTarget && onClose()}
       >
         <div
-          className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-xl"
+          className="w-full max-w-md max-h-dvh overflow-y-auto rounded-xl"
           style={{
             background: "var(--surface)",
             border: "1px solid var(--border-visible)",
@@ -299,9 +299,13 @@ export function TransactionFormModal({
               className="text-[16px] font-semibold"
               style={{ color: "var(--text-display)" }}
             >
-              {isOcr ? "Konfirmasi Scan Struk" : isEdit ? "Edit Transaksi" : "Tambah Transaksi"}
+              {isOcr
+                ? "Konfirmasi Scan Struk"
+                : isEdit
+                  ? "Edit Transaksi"
+                  : "Tambah Transaksi"}
             </p>
-            <button
+            {/* <button
               onClick={onClose}
               className="w-8 h-8 flex items-center justify-center rounded-full text-[18px]"
               style={{
@@ -311,7 +315,7 @@ export function TransactionFormModal({
               }}
             >
               ×
-            </button>
+            </button> */}
           </div>
 
           <div className="p-5 space-y-3">

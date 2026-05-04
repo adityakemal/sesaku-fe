@@ -462,28 +462,34 @@ const DAY_LABELS = ["M", "S", "S", "R", "K", "J", "S"];
 export function DateRangePicker({
   range,
   onChange,
+  placeholder,
+  onClear,
 }: {
-  range: DateRange;
+  range: DateRange | null;
   onChange: (range: DateRange) => void;
+  placeholder?: string;
+  onClear?: () => void;
 }) {
   const [open, setOpen] = useState(false);
+  const effectiveStart = range ? range.start : new Date();
   const [viewMonth1, setViewMonth1] = useState(() =>
-    dayjs(range.start).startOf("month"),
+    dayjs(effectiveStart).startOf("month"),
   );
   const [viewMonth2, setViewMonth2] = useState(() =>
-    dayjs(range.start).startOf("month").add(1, "month"),
+    dayjs(effectiveStart).startOf("month").add(1, "month"),
   );
   const [selecting, setSelecting] = useState<"start" | "end">("start");
   const [pendingStart, setPendingStart] = useState<dayjs.Dayjs | null>(null);
 
   const today = dayjs().startOf("day");
-  const startDay = dayjs(range.start);
-  const endDay = dayjs(range.end);
+  const startDay = range ? dayjs(range.start) : today;
+  const endDay = range ? dayjs(range.end) : today;
 
   useEffect(() => {
     if (open) {
-      setViewMonth1(dayjs(range.start).startOf("month"));
-      setViewMonth2(dayjs(range.start).startOf("month").add(1, "month"));
+      const s = range ? dayjs(range.start) : today;
+      setViewMonth1(s.startOf("month"));
+      setViewMonth2(s.startOf("month").add(1, "month"));
       setPendingStart(null);
       setSelecting("start");
     }
@@ -552,11 +558,13 @@ export function DateRangePicker({
     setPendingStart(null);
   };
 
-  const displayText = startDay.isSame(endDay, "day")
-    ? startDay.format("DD MMM YYYY")
-    : startDay.isSame(endDay, "year")
-      ? `${startDay.format("DD MMM")} — ${endDay.format("DD MMM YYYY")}`
-      : `${startDay.format("DD MMM YYYY")} — ${endDay.format("DD MMM YYYY")}`;
+  const displayText = !range
+    ? (placeholder || "Pilih tanggal")
+    : startDay.isSame(endDay, "day")
+      ? startDay.format("DD MMM YYYY")
+      : startDay.isSame(endDay, "year")
+        ? `${startDay.format("DD MMM")} — ${endDay.format("DD MMM YYYY")}`
+        : `${startDay.format("DD MMM YYYY")} — ${endDay.format("DD MMM YYYY")}`;
 
   const renderMonth = (viewDate: dayjs.Dayjs) => {
     const startOfMonth = viewDate.startOf("month");
@@ -642,46 +650,45 @@ export function DateRangePicker({
           background: "var(--surface)",
         }}
       >
-        <span className="truncate text-xs md:text-base">{displayText}</span>
-        <svg
-          width="10"
-          height="10"
-          viewBox="0 0 10 10"
-          fill="none"
-          style={{ flexShrink: 0 }}
-        >
-          <path
-            d="M1.5 3.5L5 7L8.5 3.5"
-            stroke="currentColor"
-            strokeWidth="1.2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
+        <span className="truncate max-w-[150px] text-[13px]">{displayText}</span>
+        {onClear && range ? (
+          <span
+            onClick={(e) => { e.stopPropagation(); onClear(); }}
+            className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-white/10 flex-shrink-0"
+            style={{ color: "var(--text-disabled)", cursor: "pointer" }}
+          >×</span>
+        ) : (
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style={{ flexShrink: 0 }}>
+            <path d="M1.5 3.5L5 7L8.5 3.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        )}
       </button>
 
       {open && (
         <div
-          className="fixed inset-0 z-50 flex items-start justify-center pt-16 p-4"
+          className="fixed inset-0 z-1150  flex justify-center items-center h-dvh p-4 "
           style={{ background: "rgba(0,0,0,0.6)" }}
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setOpen(false);
-              setSelecting("start");
-              setPendingStart(null);
-            }
-          }}
+          // onClick={(e) => {
+          //   if (e.target === e.currentTarget) {
+          //     setOpen(false);
+          //     setSelecting("start");
+          //     setPendingStart(null);
+          //   }
+          // }}
         >
           <div
-            className="w-full max-w-sm max-h-[90vh] overflow-y-auto rounded-xl"
+            className="w-full max-w-[85vw] md:max-w-md max-h-[85vh]  z-150 overflow-y-auto rounded-xl mb-16"
             style={{
               background: "var(--surface)",
               border: "1px solid var(--border-visible)",
             }}
           >
             <div
-              className="flex items-center justify-between px-4 py-3"
-              style={{ borderBottom: "1px solid var(--border)" }}
+              className="flex items-center justify-between px-4 py-3 sticky top-0 z-10"
+              style={{
+                borderBottom: "1px solid var(--border)",
+                background: "var(--surface)",
+              }}
             >
               <button
                 onClick={handlePrevTwoMonths}

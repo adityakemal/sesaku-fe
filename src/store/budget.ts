@@ -1,6 +1,7 @@
 import { create } from "zustand";
+import dayjs from "dayjs";
 import type { BudgetState, Transaction, BudgetEntry } from "@/types";
-import { getState, getBudget, saveMonthlyBudget } from "@/api/budgetApi";
+import { getState, getBudget, saveMonthlyBudget, updateBudget, deleteBudget } from "@/api/budgetApi";
 import {
   createTransaction,
   updateTransaction,
@@ -11,6 +12,10 @@ export const useBudgetStore = create<BudgetState>()((set, get) => ({
   budgetEntries: [],
   transactions: [],
   initialized: false,
+  dateRange: (() => {
+    const now = new Date();
+    return { start: new Date(now.getFullYear(), now.getMonth(), 1), end: now };
+  })(),
 
   initStore: async () => {
     let transactions: Transaction[] = [];
@@ -33,16 +38,13 @@ export const useBudgetStore = create<BudgetState>()((set, get) => ({
 
     try {
       const budgetRes = await getBudget();
-      const budgetData = budgetRes.data;
-      budgetEntries = (budgetData.monthlyBudgets || []).map(
-        (b: any, idx: number) => ({
-          id: b.id || `budget-${idx}-${b.month}`,
-          month: b.month,
-          amount: Number(b.amount) || 0,
-          note: b.note || "",
-          createdAt: b.createdAt || new Date().toISOString(),
-        }),
-      );
+      budgetEntries = (budgetRes.data || []).map((b: any) => ({
+        id: b.id,
+        date: b.date || b.created_at,
+        amount: Number(b.amount) || 0,
+        note: b.note || "",
+        createdAt: b.created_at || new Date().toISOString(),
+      }));
     } catch (err) {
       console.error("Failed to fetch budget", err);
     }
@@ -61,6 +63,8 @@ export const useBudgetStore = create<BudgetState>()((set, get) => ({
       initialized: false,
     });
   },
+
+  setDateRange: (range) => set({ dateRange: range }),
 
   refreshBudget: async () => {
     try {
@@ -89,7 +93,9 @@ export const useBudgetStore = create<BudgetState>()((set, get) => ({
   },
 
   getBudgetForMonth: (month) => {
-    const entries = get().budgetEntries.filter((e) => e.month === month);
+    const entries = get().budgetEntries.filter((e) => {
+      return dayjs(e.date).format("YYYY-MM") === month;
+    });
     return entries.reduce((sum, e) => sum + e.amount, 0);
   },
 
@@ -97,13 +103,14 @@ export const useBudgetStore = create<BudgetState>()((set, get) => ({
     const newEntry: BudgetEntry = {
       ...entry,
       id: crypto.randomUUID(),
+      date: entry.date || new Date().toISOString(),
       createdAt: new Date().toISOString(),
     };
     set((s) => ({
       budgetEntries: [newEntry, ...s.budgetEntries],
     }));
     try {
-      await saveMonthlyBudget(entry.month, newEntry.amount);
+      await saveMonthlyBudget({ id: newEntry.id, date: newEntry.date, amount: newEntry.amount, note: newEntry.note });
     } catch (error) {
       set((s) => ({
         budgetEntries: s.budgetEntries.filter((e) => e.id !== newEntry.id),
@@ -112,18 +119,27 @@ export const useBudgetStore = create<BudgetState>()((set, get) => ({
     }
   },
 
-  updateBudgetEntry: (id, updates) => {
+  updateBudgetEntry: async (id, updates) => {
     set((s) => ({
       budgetEntries: s.budgetEntries.map((e) =>
         e.id === id ? { ...e, ...updates } : e,
       ),
     }));
+    const entry = get().budgetEntries.find((e) => e.id === id);
+    if (entry) {
+      await updateBudget(id, { amount: entry.amount, note: entry.note });
+    }
   },
 
-  deleteBudgetEntry: (id) => {
+  deleteBudgetEntry: async (id) => {
     set((s) => ({
       budgetEntries: s.budgetEntries.filter((e) => e.id !== id),
     }));
+    try {
+      await deleteBudget(id);
+    } catch {
+      // optional: rollback or ignore
+    }
   },
 
   addTransaction: async (t) => {
