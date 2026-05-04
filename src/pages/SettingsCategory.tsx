@@ -13,7 +13,6 @@ const MAX_CATEGORIES = 7;
 
 export default function SettingsCategory() {
   const queryClient = useQueryClient();
-  const listCategory = useStorageStore((s) => s.listCategory);
   const setCategory = useStorageStore((s) => s.setListCategory);
 
   const { data: categories = [], isLoading } = useQuery<Category[]>({

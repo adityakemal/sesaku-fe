@@ -13,10 +13,9 @@ import { PageLayout } from '@/components/layout/PageLayout';
 import { useTheme } from "@/hooks/useTheme";
 import { useBudgetStore } from "@/store/budget";
 import { formatCurrency } from "@/utils";
-import { toMonthKey } from "@/types";
 
 export default function TransactionPage() {
-  const { mounted, darkMode, toggle } = useTheme();
+  const { mounted } = useTheme();
   const navigate = useNavigate();
   const [showAddModal, setShowAddModal] = useState(false);
   const [search, setSearch] = useState("");

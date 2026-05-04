@@ -15,7 +15,7 @@ import { formatCurrency } from "@/utils";
 import { toMonthKey } from "@/types";
 
 export default function Home() {
-  const { mounted, darkMode, toggle } = useTheme();
+  const { mounted } = useTheme();
   const { transactions, getBudgetForMonth, budgetEntries, dateRange, setDateRange, totalBudget, totalTransaction } =
     useBudgetStore();
 
