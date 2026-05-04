@@ -1,15 +1,14 @@
-
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import Fuse from "fuse.js";
 import dayjs from "dayjs";
-import { TransactionFormModal } from '@/components/transactions/TransactionFormModal';
-import { TransactionList } from '@/components/transactions/TransactionList';
-import { SearchInput } from '@/components/SearchInput';
-import { BottomNav } from '@/components/layout/BottomNav';
-import { DataActions } from '@/components/DataActions';
-import { AppHeader } from '@/components/layout/AppHeader';
-import { PageLayout } from '@/components/layout/PageLayout';
+import { TransactionFormModal } from "@/components/transactions/TransactionFormModal";
+import { TransactionList } from "@/components/transactions/TransactionList";
+import { SearchInput } from "@/components/SearchInput";
+import { BottomNav } from "@/components/layout/BottomNav";
+import { DataActions } from "@/components/DataActions";
+import { AppHeader } from "@/components/layout/AppHeader";
+import { PageLayout } from "@/components/layout/PageLayout";
 import { useTheme } from "@/hooks/useTheme";
 import { useBudgetStore } from "@/store/budget";
 import { formatCurrency } from "@/utils";
@@ -19,7 +18,13 @@ export default function TransactionPage() {
   const navigate = useNavigate();
   const [showAddModal, setShowAddModal] = useState(false);
   const [search, setSearch] = useState("");
-  const { transactions, dateRange, setDateRange, totalBudget, totalTransaction } = useBudgetStore();
+  const {
+    transactions,
+    dateRange,
+    setDateRange,
+    totalBudget,
+    totalTransaction,
+  } = useBudgetStore();
 
   const start = dayjs(dateRange.start).startOf("day").toDate();
   const end = dayjs(dateRange.end).endOf("day").toDate();
@@ -90,46 +95,76 @@ export default function TransactionPage() {
       />
 
       {/* Budget summary bar */}
-      <div
-        role="button"
-        tabIndex={0}
-        onClick={() => navigate("/budget")}
-        className="w-full p-4 rounded-xl"
-        style={{
-          background: "var(--surface)",
-          cursor: "pointer",
-        }}
-      >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div
-              className="w-12 h-12 rounded-xl flex items-center justify-center text-[15px] font-bold"
-              style={{
-                background:
-                  remaining < 0 ? "rgba(215,25,33,0.15)" : "rgba(74,158,92,0.15)",
-                color: remaining < 0 ? "var(--accent)" : "var(--success)",
-              }}
-            >
-              {progress > 100 ? "!" : `${Math.min(progress, 100).toFixed(0)}%`}
-            </div>
-            <div className="text-left">
+      <div className="flex gap-4">
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() => navigate("/budget")}
+          className=" p-4 rounded-xl flex-1"
+          style={{
+            background: "var(--surface)",
+            cursor: "pointer",
+          }}
+        >
+          <div className="flex items-center justify-between">
+            <div className="">
+              {/* <div
+                className="w-12 h-12 rounded-xl flex items-center justify-center text-[15px] font-bold"
+                style={{
+                  background:
+                    remaining < 0
+                      ? "rgba(215,25,33,0.15)"
+                      : "rgba(74,158,92,0.15)",
+                  color: remaining < 0 ? "var(--accent)" : "var(--success)",
+                }}
+              >
+                {progress > 100
+                  ? "!"
+                  : `${Math.min(progress, 100).toFixed(0)}%`}
+              </div> */}
+              <p
+                className="text-[10px]"
+                style={{ color: "var(--text-disabled)" }}
+              >
+                Sisa budget
+              </p>
               <p
                 className="text-[15px] font-semibold"
-                style={{ color: "var(--text-display)" }}
+                style={{
+                  color: remaining < 0 ? "var(--accent)" : "var(--success)",
+                }}
               >
                 {formatCurrency(remaining)}
               </p>
-              <p
+              {/* <p
                 className="text-[11px]"
                 style={{ color: "var(--text-secondary)" }}
               >
-                sisa dari {formatCurrency(totalBudget)}
-              </p>
+                dari {formatCurrency(totalBudget)}
+              </p> */}
             </div>
           </div>
+        </div>
+        <div
+          role="button"
+          tabIndex={0}
+          className=" p-4 rounded-xl"
+          style={{
+            background: "var(--surface)",
+            cursor: "pointer",
+          }}
+        >
           <div className="text-right">
-            <p className="text-[10px]" style={{ color: "var(--text-disabled)" }}>dibelanjakan</p>
-            <p className="text-[13px] font-mono font-bold" style={{ color: "var(--accent)" }}>
+            <p
+              className="text-[10px]"
+              style={{ color: "var(--text-disabled)" }}
+            >
+              Total transaksi
+            </p>
+            <p
+              className="text-[13px] font-mono font-bold"
+              style={{ color: "var(--accent)" }}
+            >
               {formatCurrency(totalSpent)}
             </p>
           </div>
@@ -166,7 +201,12 @@ export default function TransactionPage() {
               }}
             >
               <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                <path d="M6 2V10M2 6H10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                <path
+                  d="M6 2V10M2 6H10"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
               </svg>
               Tambah
             </button>
