@@ -12,6 +12,8 @@ export const useBudgetStore = create<BudgetState>()((set, get) => ({
   budgetEntries: [],
   transactions: [],
   initialized: false,
+  totalBudget: 0,
+  totalTransaction: 0,
   dateRange: (() => {
     const now = new Date();
     return { start: new Date(now.getFullYear(), now.getMonth(), 1), end: now };
@@ -20,6 +22,8 @@ export const useBudgetStore = create<BudgetState>()((set, get) => ({
   initStore: async () => {
     let transactions: Transaction[] = [];
     let budgetEntries: BudgetEntry[] = [];
+    let totalBudget = 0;
+    let totalTransaction = 0;
 
     try {
       const stateRes = await getState();
@@ -32,6 +36,8 @@ export const useBudgetStore = create<BudgetState>()((set, get) => ({
             ? JSON.parse(tx.details)
             : tx.details || undefined,
       }));
+      totalBudget = Number(stateData.totalBudget) || 0;
+      totalTransaction = Number(stateData.totalTransaction) || 0;
     } catch (err) {
       console.error("Failed to fetch state", err);
     }
@@ -52,6 +58,8 @@ export const useBudgetStore = create<BudgetState>()((set, get) => ({
     set({
       transactions,
       budgetEntries,
+      totalBudget,
+      totalTransaction,
       initialized: true,
     });
   },
@@ -60,6 +68,8 @@ export const useBudgetStore = create<BudgetState>()((set, get) => ({
     set({
       transactions: [],
       budgetEntries: [],
+      totalBudget: 0,
+      totalTransaction: 0,
       initialized: false,
     });
   },
@@ -120,15 +130,15 @@ export const useBudgetStore = create<BudgetState>()((set, get) => ({
   },
 
   updateBudgetEntry: async (id, updates) => {
+    const prev = get().budgetEntries.find((e) => e.id === id);
+    if (!prev) return;
+    const merged = { ...prev, ...updates };
     set((s) => ({
       budgetEntries: s.budgetEntries.map((e) =>
-        e.id === id ? { ...e, ...updates } : e,
+        e.id === id ? merged : e,
       ),
     }));
-    const entry = get().budgetEntries.find((e) => e.id === id);
-    if (entry) {
-      await updateBudget(id, { amount: entry.amount, note: entry.note });
-    }
+    await updateBudget(id, { date: merged.date, amount: merged.amount, note: merged.note });
   },
 
   deleteBudgetEntry: async (id) => {

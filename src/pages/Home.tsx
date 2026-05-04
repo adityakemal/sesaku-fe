@@ -16,7 +16,7 @@ import { toMonthKey } from "@/types";
 
 export default function Home() {
   const { mounted, darkMode, toggle } = useTheme();
-  const { transactions, getBudgetForMonth, budgetEntries, dateRange, setDateRange } =
+  const { transactions, getBudgetForMonth, budgetEntries, dateRange, setDateRange, totalBudget, totalTransaction } =
     useBudgetStore();
 
   const categories = useStorageStore((s) => s.listCategory).map((c) => c.name);
@@ -24,21 +24,18 @@ export default function Home() {
   const start = dayjs(dateRange.start).startOf("day").toDate();
   const end = dayjs(dateRange.end).endOf("day").toDate();
 
-  const budget = useMemo(
-    () => budgetEntries.reduce((sum, e) => sum + e.amount, 0),
-    [budgetEntries],
-  );
   const filteredTransactions = transactions.filter((t) => {
     const d = new Date(t.date);
     return d >= start && d <= end;
   });
 
+  const remaining = totalBudget - totalTransaction;
+  const progress = totalBudget > 0 ? (totalTransaction / totalBudget) * 100 : 0;
+
   const totalSpent = filteredTransactions.reduce(
     (sum, t) => sum + t.nominal,
     0,
   );
-  const remaining = budget - totalSpent;
-  const progress = budget > 0 ? (totalSpent / budget) * 100 : 0;
 
   const rangeDays =
     dayjs(dateRange.end).diff(dayjs(dateRange.start), "day") + 1;
@@ -124,7 +121,7 @@ export default function Home() {
               className="text-[12px] whitespace-nowrap"
               style={{ color: "var(--text-secondary)" }}
             >
-              {formatCurrency(totalSpent)} / {formatCurrency(budget)}
+              {formatCurrency(totalTransaction)} / {formatCurrency(totalBudget)}
             </p>
           </div>
         </div>

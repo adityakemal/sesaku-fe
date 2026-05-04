@@ -59,6 +59,8 @@ export interface BudgetState {
   transactions: Transaction[];
   initialized: boolean;
   dateRange: { start: Date; end: Date };
+  totalBudget: number;
+  totalTransaction: number;
 
   // Budget actions
   getBudgetForMonth: (month: string) => number;

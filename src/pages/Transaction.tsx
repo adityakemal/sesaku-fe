@@ -20,15 +20,11 @@ export default function TransactionPage() {
   const navigate = useNavigate();
   const [showAddModal, setShowAddModal] = useState(false);
   const [search, setSearch] = useState("");
-  const { transactions, getBudgetForMonth, budgetEntries, dateRange, setDateRange } = useBudgetStore();
+  const { transactions, dateRange, setDateRange, totalBudget, totalTransaction } = useBudgetStore();
 
   const start = dayjs(dateRange.start).startOf("day").toDate();
   const end = dayjs(dateRange.end).endOf("day").toDate();
 
-  const budget = useMemo(
-    () => budgetEntries.reduce((sum, e) => sum + e.amount, 0),
-    [budgetEntries],
-  );
   const filteredByRange = useMemo(
     () =>
       transactions.filter((t) => {
@@ -64,8 +60,8 @@ export default function TransactionPage() {
     (sum, t) => sum + t.nominal,
     0,
   );
-  const remaining = budget - totalSpent;
-  const progress = budget > 0 ? (totalSpent / budget) * 100 : 0;
+  const remaining = totalBudget - totalTransaction;
+  const progress = totalBudget > 0 ? (totalTransaction / totalBudget) * 100 : 0;
 
   if (!mounted) {
     return (
@@ -128,7 +124,7 @@ export default function TransactionPage() {
                 className="text-[11px]"
                 style={{ color: "var(--text-secondary)" }}
               >
-                sisa dari {formatCurrency(budget)}
+                sisa dari {formatCurrency(totalBudget)}
               </p>
             </div>
           </div>

@@ -298,6 +298,7 @@ export default function BudgetPage() {
             updateBudgetEntry(editingEntry.id, {
               amount: data.amount,
               note: data.note,
+              date: data.date,
             } as any);
             toast.success("Budget diperbarui");
             setEditingEntry(null);
