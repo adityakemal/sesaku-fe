@@ -17,6 +17,7 @@ import { formatCurrency } from "@/utils";
 import { CategorySelect } from "@/components/CategorySelect";
 import { DateRangePicker } from "@/components/DatePicker";
 import { PlanCard } from "@/components/plan/PlanCard";
+import { PlanFormModal } from "@/components/plan/PlanFormModal";
 import type { Plan as PlanType, PlanItem } from "@/types";
 
 const PAGE_LIMIT = 15;
@@ -26,18 +27,6 @@ function formatNumber(value: string | number): string {
   if (!num) return "";
   return new Intl.NumberFormat("id-ID").format(parseInt(num, 10));
 }
-
-interface DraftPlan {
-  startDate: string;
-  endDate: string;
-  items: PlanItem[];
-}
-
-const emptyDraft = (): DraftPlan => ({
-  startDate: dayjs().startOf("month").format("YYYY-MM-DD"),
-  endDate: dayjs().endOf("month").format("YYYY-MM-DD"),
-  items: [{ category: "", nominal: 0 }],
-});
 
 export default function PlanPage() {
   const { mounted } = useTheme();
@@ -83,13 +72,16 @@ export default function PlanPage() {
     [allPlans],
   );
 
-  const minStartForNew = useMemo(
-    () =>
-      latestEndDate
-        ? dayjs(latestEndDate).add(1, "day").toDate()
-        : dayjs().startOf("month").toDate(),
-    [latestEndDate],
-  );
+  const minStartForNew = useMemo(() => {
+    const oneMonthAgo = dayjs().subtract(1, "month").startOf("month");
+    if (latestEndDate) {
+      const nextAvailable = dayjs(latestEndDate).add(1, "day");
+      return nextAvailable.isAfter(oneMonthAgo)
+        ? nextAvailable.toDate()
+        : oneMonthAgo.toDate();
+    }
+    return oneMonthAgo.toDate();
+  }, [latestEndDate]);
 
   // ── Infinite scroll ────────────────────────────────────────────────────────
   const loadMoreRef = useRef<HTMLDivElement>(null);
@@ -126,39 +118,10 @@ export default function PlanPage() {
 
   // ── Local form state ───────────────────────────────────────────────────────
   const [showForm, setShowForm] = useState(false);
-  const [draft, setDraft] = useState<DraftPlan>(emptyDraft);
   const [deletingPlan, setDeletingPlan] = useState<PlanType | null>(null);
+  const [editingPlan, setEditingPlan] = useState<PlanType | null>(null);
 
-  const openForm = () => {
-    if (latestEndDate) {
-      const nextStart = dayjs(latestEndDate).add(1, "day");
-      setDraft({
-        startDate: nextStart.format("YYYY-MM-DD"),
-        endDate: nextStart.endOf("month").format("YYYY-MM-DD"),
-        items: [{ category: "", nominal: 0 }],
-      });
-    } else {
-      setDraft(emptyDraft());
-    }
-    setShowForm(true);
-  };
-
-  const totalDraft = useMemo(
-    () => draft.items.reduce((s, i) => s + i.nominal, 0),
-    [draft.items],
-  );
-
-  const updateItem = (
-    idx: number,
-    field: keyof PlanItem,
-    value: string | number,
-  ) =>
-    setDraft((prev) => ({
-      ...prev,
-      items: prev.items.map((item, i) =>
-        i === idx ? { ...item, [field]: value } : item,
-      ),
-    }));
+  const openForm = () => setShowForm(true);
 
   // ── Invalidate both queries (home page uses "plans", this page uses "plans-paginated")
   const invalidatePlans = () => {
@@ -167,16 +130,6 @@ export default function PlanPage() {
   };
 
   // ── Mutations ──────────────────────────────────────────────────────────────
-  const saveMutation = useMutation({
-    mutationFn: (plan: Partial<PlanType>) => createPlan(plan),
-    onSuccess: () => {
-      invalidatePlans();
-      setShowForm(false);
-      toast.success("Plan berhasil dibuat");
-    },
-    onError: () => toast.error("Gagal menyimpan plan"),
-  });
-
   const deleteMutation = useMutation({
     mutationFn: (id: string) => deletePlan(id),
     onSuccess: () => {
@@ -189,38 +142,6 @@ export default function PlanPage() {
       toast.error("Gagal menghapus plan");
     },
   });
-
-  const handleSave = () => {
-    if (!draft.startDate || !draft.endDate) {
-      toast.error("Pilih periode plan");
-      return;
-    }
-    if (draft.items.length === 0) {
-      toast.error("Tambahkan minimal 1 kategori");
-      return;
-    }
-    if (draft.items.some((i) => !i.category || i.nominal <= 0)) {
-      toast.error("Lengkapi semua kategori dan nominal");
-      return;
-    }
-    const newStart = dayjs(draft.startDate);
-    const newEnd = dayjs(draft.endDate);
-    const overlap = allPlans.some(
-      (p) =>
-        newStart.isBefore(dayjs(p.end_date)) &&
-        newEnd.isAfter(dayjs(p.start_date)),
-    );
-    if (overlap) {
-      toast.error("Periode bertabrakan dengan plan yang sudah ada");
-      return;
-    }
-    saveMutation.mutate({
-      start_date: draft.startDate,
-      end_date: draft.endDate,
-      items: draft.items,
-      total_amount: totalDraft,
-    });
-  };
 
   // ── Loading state ──────────────────────────────────────────────────────────
   if (!mounted || isLoading) {
@@ -260,193 +181,17 @@ export default function PlanPage() {
       />
 
       <div className="pb-28 space-y-4">
-        {/* ── Add form ───────────────────────────────────────────────────── */}
-        {showForm && (
-          <div
-            className="rounded-xl p-4 space-y-4"
-            style={{
-              background: "var(--surface)",
-              border: "1px solid var(--border-visible)",
-            }}
-          >
-            <div className="flex items-center justify-between">
-              <p
-                className="text-[13px] font-bold"
-                style={{ color: "var(--text-display)" }}
-              >
-                Plan Baru
-              </p>
-              <span
-                className="text-[14px] font-bold font-mono"
-                style={{ color: "var(--accent)" }}
-              >
-                {formatCurrency(totalDraft)}
-              </span>
-            </div>
-
-            {/* Date range */}
-            <div className="space-y-1.5">
-              <p
-                className="text-[11px] font-medium"
-                style={{ color: "var(--text-secondary)" }}
-              >
-                Periode
-              </p>
-              <DateRangePicker
-                range={{
-                  start: dayjs(draft.startDate).toDate(),
-                  end: dayjs(draft.endDate).toDate(),
-                }}
-                onChange={(r) =>
-                  setDraft((prev) => ({
-                    ...prev,
-                    startDate: dayjs(r.start).format("YYYY-MM-DD"),
-                    endDate: dayjs(r.end).format("YYYY-MM-DD"),
-                  }))
-                }
-                disableFuture={false}
-                minDate={minStartForNew}
-                placeholder="Pilih periode plan"
-              />
-              {latestEndDate && (
-                <p
-                  className="text-[11px]"
-                  style={{ color: "var(--text-disabled)" }}
-                >
-                  Mulai dari{" "}
-                  {dayjs(latestEndDate).add(1, "day").format("DD MMM YYYY")}
-                </p>
-              )}
-            </div>
-
-            {/* Category allocation */}
-            <div className="space-y-2">
-              <p
-                className="text-[11px] font-medium"
-                style={{ color: "var(--text-secondary)" }}
-              >
-                Alokasi Kategori
-              </p>
-
-              {draft.items.map((item, i) => {
-                const usedByOthers = draft.items
-                  .filter((_, j) => j !== i)
-                  .map((x) => x.category)
-                  .filter(Boolean);
-                return (
-                  <div key={i} className="flex gap-2 items-center">
-                    <button
-                      onClick={() =>
-                        setDraft((prev) => ({
-                          ...prev,
-                          items: prev.items.filter((_, j) => j !== i),
-                        }))
-                      }
-                      className="w-8 h-10 flex-shrink-0 flex items-center justify-center rounded-lg"
-                      style={{
-                        background: "var(--black)",
-                        border: "1px solid var(--border-visible)",
-                        color: "var(--text-disabled)",
-                      }}
-                    >
-                      ×
-                    </button>
-                    <div className="flex-1 min-w-0">
-                      <CategorySelect
-                        value={item.category}
-                        onChange={(cat) => updateItem(i, "category", cat)}
-                        disabledCategories={usedByOthers}
-                      />
-                    </div>
-                    <div className="flex-1 min-w-0 relative">
-                      <span
-                        className="absolute left-2 top-1/2 -translate-y-1/2 text-[11px] pointer-events-none"
-                        style={{ color: "var(--text-disabled)" }}
-                      >
-                        Rp
-                      </span>
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        placeholder="0"
-                        value={item.nominal ? formatNumber(item.nominal) : ""}
-                        onChange={(e) =>
-                          updateItem(
-                            i,
-                            "nominal",
-                            parseInt(
-                              e.target.value.replace(/[^0-9]/g, ""),
-                              10,
-                            ) || 0,
-                          )
-                        }
-                        className="w-full h-10 pl-7 pr-2 text-[13px] font-bold text-right rounded-lg"
-                        style={{
-                          border: "1px solid var(--border-visible)",
-                          background: "var(--black)",
-                          color: "var(--text-primary)",
-                        }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-
-              {draft.items.length === 0 && (
-                <p
-                  className="text-[12px] text-center italic py-2"
-                  style={{ color: "var(--text-disabled)" }}
-                >
-                  Tekan tombol di bawah untuk menambah kategori
-                </p>
-              )}
-
-              {draft.items.length < allCategories.length && (
-                <button
-                  onClick={() =>
-                    setDraft((prev) => ({
-                      ...prev,
-                      items: [...prev.items, { category: "", nominal: 0 }],
-                    }))
-                  }
-                  className="w-full h-10 text-[13px] font-semibold rounded-lg flex items-center justify-center"
-                  style={{
-                    border: "1px dashed var(--border-visible)",
-                    color: "var(--accent)",
-                    background: "transparent",
-                  }}
-                >
-                  + Tambah Alokasi Kategori
-                </button>
-              )}
-            </div>
-
-            <div
-              className="flex gap-2 pt-4 border-t "
-              style={{ borderColor: "var(--border-visible)" }}
-            >
-              <button
-                onClick={() => setShowForm(false)}
-                className="flex-1 h-11 text-[13px] rounded-lg"
-                style={{
-                  border: "1px solid var(--border-visible)",
-                  color: "var(--text-secondary)",
-                  background: "transparent",
-                }}
-              >
-                Batal
-              </button>
-              <button
-                onClick={handleSave}
-                disabled={saveMutation.isPending}
-                className="flex-1 h-11 text-[13px] font-bold rounded-lg disabled:opacity-50"
-                style={{ background: "var(--accent)", color: "white" }}
-              >
-                {saveMutation.isPending ? "Menyimpan..." : "Simpan Plan"}
-              </button>
-            </div>
-          </div>
-        )}
+        {/* ── Add / Edit Form Modal ────────────────────────────────────────── */}
+        <PlanFormModal
+          open={showForm || !!editingPlan}
+          onClose={() => {
+            setShowForm(false);
+            setEditingPlan(null);
+          }}
+          editData={editingPlan}
+          allPlans={allPlans}
+          latestEndDate={latestEndDate}
+        />
 
         {/* ── Plan list ──────────────────────────────────────────────────── */}
         {allPlans.length > 0 ? (
@@ -456,6 +201,7 @@ export default function PlanPage() {
                 key={plan.id}
                 plan={plan}
                 onDelete={setDeletingPlan}
+                onEdit={setEditingPlan}
                 isDeleting={deleteMutation.isPending}
               />
             ))}

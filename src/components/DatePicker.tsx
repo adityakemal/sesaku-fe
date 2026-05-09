@@ -565,7 +565,7 @@ export function DateRangePicker({
   };
 
   const displayText = !range
-    ? (placeholder || "Pilih tanggal")
+    ? placeholder || "Pilih tanggal"
     : startDay.isSame(endDay, "day")
       ? startDay.format("DD MMM YYYY")
       : startDay.isSame(endDay, "year")
@@ -658,16 +658,35 @@ export function DateRangePicker({
           background: "var(--surface)",
         }}
       >
-        <span className="truncate max-w-[150px] text-[13px]">{displayText}</span>
+        <span className="truncate max-w-[150px] text-[13px]">
+          {displayText}
+        </span>
         {onClear && range ? (
           <span
-            onClick={(e) => { e.stopPropagation(); onClear(); }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onClear();
+            }}
             className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-white/10 flex-shrink-0"
             style={{ color: "var(--text-disabled)", cursor: "pointer" }}
-          >×</span>
+          >
+            ×
+          </span>
         ) : (
-          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style={{ flexShrink: 0 }}>
-            <path d="M1.5 3.5L5 7L8.5 3.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+          <svg
+            width="10"
+            height="10"
+            viewBox="0 0 10 10"
+            fill="none"
+            style={{ flexShrink: 0 }}
+          >
+            <path
+              d="M1.5 3.5L5 7L8.5 3.5"
+              stroke="currentColor"
+              strokeWidth="1.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
           </svg>
         )}
       </button>
@@ -685,7 +704,7 @@ export function DateRangePicker({
           // }}
         >
           <div
-            className="w-full max-w-[85vw] md:max-w-md max-h-[85vh]  z-150 overflow-y-auto rounded-xl mb-16"
+            className="w-full max-w-[98%] md:max-w-md max-h-[80vh]  z-150 overflow-y-auto rounded-xl mb-16"
             style={{
               background: "var(--surface)",
               border: "1px solid var(--border-visible)",
