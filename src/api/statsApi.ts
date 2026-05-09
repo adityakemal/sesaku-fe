@@ -32,6 +32,7 @@ export interface PlanSummary {
   planRemaining: number;
   usagePercent: number;
   categories: { category: string; plan: number; actual: number }[];
+  unbudgetedCategories?: { category: string; actual: number }[];
 }
 
 // ── API Calls ──────────────────────────────────────────────────────────────

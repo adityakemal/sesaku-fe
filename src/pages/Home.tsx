@@ -277,6 +277,61 @@ export default function Home() {
           <div className="p-4" style={{ background: "var(--surface)" }}>
             <PlanComparisonChart items={planCategories} />
           </div>
+          {/* Unbudgeted Categories Warning */}
+          {planSummaryData?.unbudgetedCategories &&
+            planSummaryData.unbudgetedCategories.length > 0 && (
+              <button
+                onClick={() => navigate("/plan")}
+                className="mx-4 mb-4 px-3 py-2.5 rounded-lg flex items-start gap-2 text-left w-[calc(100%-32px)] hover:opacity-80 transition-opacity"
+                style={{
+                  background: "rgba(212,168,67,0.08)",
+                  border: "1px solid rgba(212,168,67,0.3)",
+                }}
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="var(--warning)"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="mt-0.5 shrink-0"
+                >
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="8" x2="12" y2="12"></line>
+                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                <div>
+                  <p
+                    className="text-[12px] font-semibold mb-0.5"
+                    style={{ color: "var(--warning)" }}
+                  >
+                    Pengeluaran di luar plan
+                  </p>
+                  <p
+                    className="text-[11px] leading-relaxed"
+                    style={{ color: "var(--text-secondary)" }}
+                  >
+                    Terdapat transaksi yang belum masuk plan:{" "}
+                    <span
+                      className="font-semibold"
+                      style={{ color: "var(--text-primary)" }}
+                    >
+                      <ul style={{ listStyleType: "disc", marginLeft: "20px" }}>
+                        {planSummaryData.unbudgetedCategories.map((c) => (
+                          <li key={c.category}>
+                            {c.category} ({formatCurrency(c.actual)})
+                          </li>
+                        ))}
+                      </ul>
+                    </span>
+                    Silahkan Edit plan aktif Anda di halaman plan.
+                  </p>
+                </div>
+              </button>
+            )}
         </div>
       ) : (
         /* CTA — no plan yet */
