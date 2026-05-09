@@ -464,11 +464,15 @@ export function DateRangePicker({
   onChange,
   placeholder,
   onClear,
+  disableFuture = true,
+  minDate,
 }: {
   range: DateRange | null;
   onChange: (range: DateRange) => void;
   placeholder?: string;
   onClear?: () => void;
+  disableFuture?: boolean;
+  minDate?: Date;
 }) {
   const [open, setOpen] = useState(false);
   const effectiveStart = range ? range.start : new Date();
@@ -502,14 +506,15 @@ export function DateRangePicker({
 
   const handleNextTwoMonths = () => {
     const next = viewMonth1.add(2, "month");
-    if (!next.startOf("month").isAfter(today, "month")) {
+    if (!disableFuture || !next.startOf("month").isAfter(today, "month")) {
       setViewMonth1(next);
       setViewMonth2(viewMonth2.add(2, "month"));
     }
   };
 
   const handleDayClick = (date: dayjs.Dayjs) => {
-    if (date.isAfter(today, "day")) return;
+    if (disableFuture && date.isAfter(today, "day")) return;
+    if (minDate && date.isBefore(minDate, "day")) return;
     if (selecting === "start") {
       setPendingStart(date);
       setSelecting("end");
@@ -552,7 +557,8 @@ export function DateRangePicker({
 
   const handleThisMonth = () => {
     const first = today.startOf("month");
-    onChange({ start: first.toDate(), end: today.toDate() });
+    const last = disableFuture ? today : today.endOf("month").startOf("day");
+    onChange({ start: first.toDate(), end: last.toDate() });
     setOpen(false);
     setSelecting("start");
     setPendingStart(null);
@@ -597,7 +603,9 @@ export function DateRangePicker({
           {days.map((d, i) => {
             if (d === null) return <div key={i} />;
             const date = viewDate.date(d);
-            const isFuture = date.isAfter(today, "day");
+            const isFuture = disableFuture && date.isAfter(today, "day");
+            const isPast = !!minDate && date.isBefore(minDate, "day");
+            const isDisabled = isFuture || isPast;
             const isToday = date.isSame(today, "day");
             const inRange = isInRange(date);
             const isEdge = isRangeEdge(date);
@@ -606,7 +614,7 @@ export function DateRangePicker({
               <button
                 key={i}
                 onClick={() => handleDayClick(date)}
-                disabled={isFuture}
+                disabled={isDisabled}
                 className="h-9 rounded flex items-center justify-center text-[13px] transition-colors"
                 style={{
                   background: isEdge
@@ -616,7 +624,7 @@ export function DateRangePicker({
                       : "transparent",
                   color: isEdge
                     ? "white"
-                    : isFuture
+                    : isDisabled
                       ? "var(--text-disabled)"
                       : isToday
                         ? "var(--accent)"
@@ -626,7 +634,7 @@ export function DateRangePicker({
                       ? "1px solid var(--accent)"
                       : "1px solid transparent",
                   fontWeight: isEdge || isToday ? 600 : 400,
-                  cursor: isFuture ? "not-allowed" : "pointer",
+                  cursor: isDisabled ? "not-allowed" : "pointer",
                 }}
               >
                 {d}

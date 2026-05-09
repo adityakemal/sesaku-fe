@@ -5,6 +5,7 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Transaction from "./pages/Transaction";
 import Budget from "./pages/Budget";
+import Plan from "./pages/Plan";
 import Settings from "./pages/Settings";
 import SettingsCategory from "./pages/SettingsCategory";
 import SettingsHistory from "./pages/SettingsHistory";
@@ -107,6 +108,14 @@ function App() {
         element={
           <PrivateRoute>
             <Budget />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/plan"
+        element={
+          <PrivateRoute>
+            <Plan />
           </PrivateRoute>
         }
       />

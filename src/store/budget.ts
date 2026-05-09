@@ -7,6 +7,7 @@ import {
   updateTransaction,
   deleteTransaction,
 } from "@/api/transactionApi";
+import { queryClient } from "@/main";
 
 export const useBudgetStore = create<BudgetState>()((set, get) => ({
   budgetEntries: [],
@@ -166,38 +167,39 @@ export const useBudgetStore = create<BudgetState>()((set, get) => ({
       source: t.source || "Web",
     } as Transaction;
     set((s) => ({
-      transactions: [newTx, ...s.transactions],
       totalTransaction: s.totalTransaction + (newTx.nominal || 0),
     }));
     try {
       await createTransaction(newTx);
+      queryClient.invalidateQueries({ queryKey: ["transactions-paginated"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] });
+      queryClient.invalidateQueries({ queryKey: ["category-breakdown"] });
+      queryClient.invalidateQueries({ queryKey: ["spending-trend"] });
+      queryClient.invalidateQueries({ queryKey: ["plan-summary"] });
     } catch (error) {
       set((s) => ({
-        transactions: s.transactions.filter((tx) => tx.id !== newTx.id),
+        totalTransaction: s.totalTransaction - (newTx.nominal || 0),
       }));
       throw error;
     }
   },
 
-  updateTransaction: (id, updates) => {
-    const prev = get().transactions.find((t) => t.id === id);
-    const delta = prev && updates.nominal != null ? (Number(updates.nominal) || 0) - (prev.nominal || 0) : 0;
-    set((s) => ({
-      transactions: s.transactions.map((t) =>
-        t.id === id ? { ...t, ...updates } : t,
-      ),
-      totalTransaction: s.totalTransaction + delta,
-    }));
-    const tx = get().transactions.find((t) => t.id === id);
-    if (tx) updateTransaction(id, tx);
+  updateTransaction: async (id, updates) => {
+    const tx = { ...updates } as Transaction; // optimistic assumption, we don't have prev easily
+    await updateTransaction(id, tx);
+    queryClient.invalidateQueries({ queryKey: ["transactions-paginated"] });
+    queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] });
+    queryClient.invalidateQueries({ queryKey: ["category-breakdown"] });
+    queryClient.invalidateQueries({ queryKey: ["spending-trend"] });
+    queryClient.invalidateQueries({ queryKey: ["plan-summary"] });
   },
 
-  deleteTransaction: (id) => {
-    const tx = get().transactions.find((t) => t.id === id);
-    set((s) => ({
-      transactions: s.transactions.filter((t) => t.id !== id),
-      totalTransaction: s.totalTransaction - (tx?.nominal || 0),
-    }));
-    deleteTransaction(id);
+  deleteTransaction: async (id) => {
+    await deleteTransaction(id);
+    queryClient.invalidateQueries({ queryKey: ["transactions-paginated"] });
+    queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] });
+    queryClient.invalidateQueries({ queryKey: ["category-breakdown"] });
+    queryClient.invalidateQueries({ queryKey: ["spending-trend"] });
+    queryClient.invalidateQueries({ queryKey: ["plan-summary"] });
   },
 }));

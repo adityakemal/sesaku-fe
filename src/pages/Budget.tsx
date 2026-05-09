@@ -521,7 +521,7 @@ function BudgetModal({
             </label>
             <input
               type="text"
-              placeholder="Catatan..."
+              placeholder="Gaji, Freelance, dll..."
               value={note}
               onChange={(e) => setNote(e.target.value)}
               className="w-full h-10 px-3 text-[14px] rounded-lg"

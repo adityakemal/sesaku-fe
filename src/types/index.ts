@@ -40,6 +40,22 @@ export interface Category {
   created_at: string;
 }
 
+export interface PlanItem {
+  category: string;
+  nominal: number;
+  actual?: number; // Backend-calculated actual spending for this category
+}
+
+export interface Plan {
+  id: string;
+  start_date: string;
+  end_date: string;
+  items: PlanItem[];
+  total_amount: number;
+  created_at: string;
+  spent?: number; // Backend-calculated total spending during plan period
+}
+
 export interface MonthlyBudget {
   month: string; // "YYYY-MM" format
   amount: number;

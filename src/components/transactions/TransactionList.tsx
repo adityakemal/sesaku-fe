@@ -192,10 +192,12 @@ export function TransactionList({ transactions }: TransactionListProps) {
                     </div>
                   </td>
                   <td className="p-3">
-                    <div className="flex items-center gap-1.5">
+                    <div
+                      className="flex items-center gap-1.5"
+                      onClick={() => (hasItems(t) ? toggleExpand(t.id) : null)}
+                    >
                       {hasItems(t) && (
                         <button
-                          onClick={() => toggleExpand(t.id)}
                           className="w-5 h-5 flex items-center justify-center rounded flex-shrink-0 transition-colors"
                           style={{
                             background: "none",
@@ -364,7 +366,7 @@ export function TransactionList({ transactions }: TransactionListProps) {
                             {t.details.items.map((item, i) => (
                               <div
                                 key={i}
-                                className="flex justify-between py-0.5 max-w-xs md:max-w-full"
+                                className="flex justify-between items-center py-0.5 max-w-xs md:max-w-full gap-4"
                                 style={{
                                   borderBottom: "1px solid var(--border)",
                                 }}
@@ -375,7 +377,7 @@ export function TransactionList({ transactions }: TransactionListProps) {
                                   {item.name}
                                 </span>
                                 <span
-                                  className="font-mono"
+                                  className="font-mono whitespace-nowrap"
                                   style={{ color: "var(--text-primary)" }}
                                 >
                                   Rp {item.price.toLocaleString("id-ID")}

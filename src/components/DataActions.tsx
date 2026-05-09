@@ -79,16 +79,35 @@ export function DataActions({ dateRange }: DataActionsProps) {
       if (t.details?.items?.length) {
         return {
           ...base,
-          items: t.details.items.map((i) => `${i.name}: ${i.price}`).join(" | "),
-          tax: t.details.tax?.map((tx) => `${tx.name}: ${tx.type === "percent" ? tx.value + "%" : tx.value}`).join(" | ") || "",
-          discount: t.details.discount?.map((d) => `${d.name}: ${d.type === "percent" ? d.value + "%" : d.value}`).join(" | ") || "",
+          items: t.details.items
+            .map((i) => `${i.name}: ${i.price}`)
+            .join(" | "),
+          tax:
+            t.details.tax
+              ?.map(
+                (tx) =>
+                  `${tx.name}: ${tx.type === "percent" ? tx.value + "%" : tx.value}`,
+              )
+              .join(" | ") || "",
+          discount:
+            t.details.discount
+              ?.map(
+                (d) =>
+                  `${d.name}: ${d.type === "percent" ? d.value + "%" : d.value}`,
+              )
+              .join(" | ") || "",
         };
       }
       return { ...base, items: "", tax: "", discount: "" };
     });
 
-    const username = user?.name?.replace(/\s+/g, "_").toLowerCase() || user?.email?.split("@")[0] || "user";
-    const startStr = dateRange ? dayjs(dateRange.start).format("DD-MM-YYYY") : "";
+    const username =
+      user?.name?.replace(/\s+/g, "_").toLowerCase() ||
+      user?.email?.split("@")[0] ||
+      "user";
+    const startStr = dateRange
+      ? dayjs(dateRange.start).format("DD-MM-YYYY")
+      : "";
     const endStr = dateRange ? dayjs(dateRange.end).format("DD-MM-YYYY") : "";
     const dateStr = dateRange ? `${startStr}_${endStr}` : "all";
     const filename = `sesaku-data-${username}-${dateStr}.csv`;
@@ -151,18 +170,32 @@ export function DataActions({ dateRange }: DataActionsProps) {
                 return raw.split("|").map((s) => {
                   const lastColon = s.lastIndexOf(":");
                   if (lastColon === -1) return { name: s.trim(), price: 0 };
-                  return { name: s.slice(0, lastColon).trim(), price: parseInt(s.slice(lastColon + 1).replace(/[^0-9]/g, ""), 10) || 0 };
+                  return {
+                    name: s.slice(0, lastColon).trim(),
+                    price:
+                      parseInt(
+                        s.slice(lastColon + 1).replace(/[^0-9]/g, ""),
+                        10,
+                      ) || 0,
+                  };
                 });
               };
               const parseTaxDisc = (raw: string) => {
                 if (!raw?.trim()) return undefined;
                 return raw.split("|").map((s) => {
                   const lastColon = s.lastIndexOf(":");
-                  const name = lastColon === -1 ? s.trim() : s.slice(0, lastColon).trim();
-                  const valStr = lastColon === -1 ? "" : s.slice(lastColon + 1).trim();
+                  const name =
+                    lastColon === -1 ? s.trim() : s.slice(0, lastColon).trim();
+                  const valStr =
+                    lastColon === -1 ? "" : s.slice(lastColon + 1).trim();
                   const isPercent = valStr.includes("%");
-                  const value = parseInt(valStr.replace(/[^0-9]/g, ""), 10) || 0;
-                  return { name, value, type: isPercent ? "percent" as const : "fixed" as const };
+                  const value =
+                    parseInt(valStr.replace(/[^0-9]/g, ""), 10) || 0;
+                  return {
+                    name,
+                    value,
+                    type: isPercent ? ("percent" as const) : ("fixed" as const),
+                  };
                 });
               };
 
@@ -337,64 +370,93 @@ export function DataActions({ dateRange }: DataActionsProps) {
     }
   };
 
+  const [isCollapsed, setIsCollapsed] = useState(true);
+
   return (
-    <div
-      className="flex flex-col gap-3 p-4 rounded-xl mt-4"
-      style={{ background: "var(--surface)" }}
-    >
-      <p
-        className="text-[14px] font-semibold"
-        style={{ color: "var(--text-display)" }}
+    <>
+      <div
+        className="flex flex-col p-4 rounded-xl mt-4"
+        style={{ background: "var(--surface)" }}
       >
-        Manajemen Data
-      </p>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         <button
-          onClick={handleDownloadTemplate}
-          className="w-full h-11 text-[13px] font-medium rounded-lg"
-          style={{
-            border: "1px solid var(--border-visible)",
-            color: "var(--text-secondary)",
-            background: "transparent",
-          }}
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className="flex items-center justify-between w-full text-left"
         >
-          Contoh Format
+          <p
+            className="text-[14px] font-semibold"
+            style={{ color: "var(--text-display)" }}
+          >
+            Manajemen Data
+          </p>
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            style={{
+              transform: isCollapsed ? "rotate(0deg)" : "rotate(180deg)",
+              transition: "transform 0.2s",
+            }}
+          >
+            <path
+              d="M6 9L12 15L18 9"
+              stroke="var(--text-secondary)"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
         </button>
-        <button
-          onClick={handleExport}
-          className="w-full h-11 text-[13px] font-medium rounded-lg"
-          style={{
-            border: "1px solid var(--border-visible)",
-            color: "var(--text-secondary)",
-            background: "transparent",
-          }}
-        >
-          Unduh Data
-        </button>
-        <button
-          onClick={handleImportClick}
-          className="w-full h-11 text-[13px] font-bold rounded-lg"
-          style={{
-            background: "var(--accent)",
-            color: "white",
-            border: "none",
-          }}
-        >
-          Upload CSV
-        </button>
-        <button
-          onClick={handleOcrClick}
-          disabled={isScanning}
-          className="w-full h-11 text-[13px] font-bold rounded-lg flex items-center justify-center gap-2"
-          style={{
-            background: "var(--success, #10b981)",
-            color: "white",
-            border: "none",
-            opacity: isScanning ? 0.7 : 1,
-          }}
-        >
-          {isScanning ? "Memproses..." : "📷 Scan Struk"}
-        </button>
+
+        {!isCollapsed && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-4 ">
+            <button
+              onClick={handleDownloadTemplate}
+              className="w-full h-11 text-[13px] font-medium rounded-lg"
+              style={{
+                border: "1px solid var(--border-visible)",
+                color: "var(--text-secondary)",
+                background: "transparent",
+              }}
+            >
+              Contoh Format
+            </button>
+            <button
+              onClick={handleExport}
+              className="w-full h-11 text-[13px] font-medium rounded-lg"
+              style={{
+                border: "1px solid var(--border-visible)",
+                color: "var(--text-secondary)",
+                background: "transparent",
+              }}
+            >
+              Unduh Data
+            </button>
+            <button
+              onClick={handleImportClick}
+              className="w-full h-11 text-[13px] font-bold rounded-lg"
+              style={{
+                background: "var(--accent)",
+                color: "white",
+                border: "none",
+              }}
+            >
+              Upload CSV
+            </button>
+            <button
+              onClick={handleOcrClick}
+              className="w-full h-11 text-[13px] font-bold rounded-lg"
+              style={{
+                border: "1px solid var(--border-visible)",
+                color: "white",
+                background: "var(--accent)",
+              }}
+            >
+              Scan Struk
+            </button>
+          </div>
+        )}
+
         <input
           type="file"
           accept=".csv"
@@ -410,6 +472,60 @@ export function DataActions({ dateRange }: DataActionsProps) {
           onChange={handleOcrChange}
         />
       </div>
+
+      {/* Floating Action Button for Scan Struk */}
+      <button
+        onClick={handleOcrClick}
+        disabled={isScanning}
+        className="fixed bottom-24 right-4 z-50 flex items-center justify-center rounded-full shadow-lg transition-transform hover:scale-105 active:scale-95"
+        style={{
+          width: "56px",
+          height: "56px",
+          background: "var(--accent)",
+          color: "white",
+          border: "none",
+          opacity: isScanning ? 0.7 : 1,
+        }}
+      >
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <path
+            d="M4 8V6C4 5.46957 4.21071 4.96086 4.58579 4.58579C4.96086 4.21071 5.46957 4 6 4H8"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M4 16V18C4 18.5304 4.21071 19.0391 4.58579 19.4142C4.96086 19.7893 5.46957 20 6 20H8"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M16 4H18C18.5304 4 19.0391 4.21071 19.4142 4.58579C19.7893 4.96086 20 5.46957 20 6V8"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M16 20H18C18.5304 20 19.0391 19.7893 19.4142 19.4142C19.7893 19.0391 20 18.5304 20 18V16"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2" />
+          <path
+            d="M12 10L14 8"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </button>
 
       <TransactionFormModal
         open={isOcrModalOpen}
@@ -431,6 +547,6 @@ export function DataActions({ dateRange }: DataActionsProps) {
           </p>
         </div>
       )}
-    </div>
+    </>
   );
 }

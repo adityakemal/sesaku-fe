@@ -1,74 +1,132 @@
-import { useMemo } from "react";
+import { useState, useMemo } from "react";
 import dayjs from "dayjs";
+import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import {
   CategoryChart,
-  WeeklyChart,
-  SavingsChart,
+  SpendingTrendChart,
+  PlanComparisonChart,
 } from "@/components/charts/Charts";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { useTheme } from "@/hooks/useTheme";
 import { useBudgetStore } from "@/store/budget";
-import { useStorageStore } from "@/store/storage";
 import { formatCurrency } from "@/utils";
-import { toMonthKey } from "@/types";
+import { MonthNavigator } from "@/components/MonthNavigator";
+import {
+  getDashboardSummary,
+  getCategoryBreakdown,
+  getSpendingTrend,
+  getPlanSummary,
+} from "@/api/statsApi";
+import { getPlans } from "@/api/planApi";
+import type { Plan as PlanType } from "@/types";
+
+// Helper to format a month selector (YYYY-MM)
+const toMonthParam = (d: dayjs.Dayjs) => ({
+  start: d.startOf("month").toISOString(),
+  end: d.endOf("month").toISOString(),
+});
 
 export default function Home() {
+  const navigate = useNavigate();
   const { mounted } = useTheme();
-  const { transactions, getBudgetForMonth, budgetEntries, dateRange, setDateRange, totalBudget, totalTransaction } =
-    useBudgetStore();
+  // UI-only: selected month for the spending section
+  const [selectedMonth, setSelectedMonth] = useState(() => dayjs());
+  const monthParams = useMemo(
+    () => toMonthParam(selectedMonth),
+    [selectedMonth],
+  );
 
-  const categories = useStorageStore((s) => s.listCategory).map((c) => c.name);
+  // Global budget info (all-time) from the store
+  const { totalBudget, totalTransaction } = useBudgetStore();
 
-  const start = dayjs(dateRange.start).startOf("day").toDate();
-  const end = dayjs(dateRange.end).endOf("day").toDate();
-
-  const filteredTransactions = transactions.filter((t) => {
-    const d = new Date(t.date);
-    return d >= start && d <= end;
+  // ── Fetch active plan list ──────────────────────────────────────────────
+  const { data: plansData } = useQuery({
+    queryKey: ["plans"],
+    queryFn: async () => {
+      const res = await getPlans();
+      return res.data.data as PlanType[];
+    },
+    staleTime: 60_000,
   });
 
+  // Smart active plan: current > upcoming > most recent
+  const activePlan = useMemo(() => {
+    if (!plansData || plansData.length === 0) return null;
+    const today = dayjs();
+    const current = plansData.find(
+      (p) =>
+        !dayjs(p.start_date).isAfter(today, "day") &&
+        !dayjs(p.end_date).isBefore(today, "day"),
+    );
+    if (current) return current;
+    const upcoming = plansData
+      .filter((p) => dayjs(p.start_date).isAfter(today))
+      .sort((a, b) => a.start_date.localeCompare(b.start_date))[0];
+    return (
+      upcoming ??
+      plansData.sort((a, b) => b.end_date.localeCompare(a.end_date))[0]
+    );
+  }, [plansData]);
+
+  // ── Fetch plan summary from BE (spending vs plan per category) ──────────
+  const { data: planSummaryData } = useQuery({
+    queryKey: ["plan-summary", activePlan?.id],
+    queryFn: async () => {
+      const res = await getPlanSummary(activePlan!.id);
+      return res.data.data;
+    },
+    enabled: !!activePlan?.id,
+    staleTime: 60_000,
+  });
+
+  // ── Fetch dashboard summary cards for selected month ───────────────────
+  const { data: summaryData, isLoading: summaryLoading } = useQuery({
+    queryKey: ["dashboard-summary", monthParams.start],
+    queryFn: async () => {
+      const res = await getDashboardSummary(monthParams);
+      return res.data.data;
+    },
+    staleTime: 30_000,
+  });
+
+  // ── Fetch category breakdown for selected month ─────────────────────────
+  const { data: categoryData } = useQuery({
+    queryKey: ["category-breakdown", monthParams.start],
+    queryFn: async () => {
+      const res = await getCategoryBreakdown(monthParams);
+      return res.data.data;
+    },
+    staleTime: 30_000,
+  });
+
+  // ── Fetch spending trend for selected month ─────────────────────────────
+  const { data: trendData } = useQuery({
+    queryKey: ["spending-trend", monthParams.start],
+    queryFn: async () => {
+      const res = await getSpendingTrend(monthParams);
+      return res.data.data;
+    },
+    staleTime: 30_000,
+  });
+
+  // ── Derived from summary ────────────────────────────────────────────────
   const remaining = totalBudget - totalTransaction;
   const progress = totalBudget > 0 ? (totalTransaction / totalBudget) * 100 : 0;
 
-  const totalSpent = filteredTransactions.reduce(
-    (sum, t) => sum + t.nominal,
-    0,
-  );
+  const rangeTotal = summaryData?.rangeTotal ?? 0;
+  const rangeCount = summaryData?.rangeCount ?? 0;
+  const dailyAvg = summaryData?.dailyAvg ?? 0;
+  const avgPerTx = summaryData?.avgPerTx ?? 0;
+  const topCategory = summaryData?.topCategory ?? null;
 
-  const rangeDays =
-    dayjs(dateRange.end).diff(dayjs(dateRange.start), "day") + 1;
-  const dailyAvg = rangeDays > 0 ? totalSpent / rangeDays : 0;
-  const transactionCount = filteredTransactions.length;
-  const avgPerTransaction =
-    transactionCount > 0 ? totalSpent / transactionCount : 0;
-
-  const catTotals: Record<string, number> = {};
-  filteredTransactions.forEach((t) => {
-    catTotals[t.kategori] = (catTotals[t.kategori] || 0) + t.nominal;
-  });
-  const topCategory = Object.entries(catTotals).sort((a, b) => b[1] - a[1])[0];
-
-  const savingsData = useMemo(() => {
-    const months: { month: string; budget: number; spent: number }[] = [];
-    for (let i = 5; i >= 0; i--) {
-      const m = dayjs(dateRange.start).subtract(i, "month");
-      const key = toMonthKey(m.toDate());
-      const mBudget = getBudgetForMonth(key);
-      const mSpent = transactions
-        .filter((t) => {
-          const d = dayjs(t.date);
-          return d.isSame(m, "month");
-        })
-        .reduce((s, t) => s + t.nominal, 0);
-
-      if (mBudget > 0 || mSpent > 0) {
-        months.push({ month: key, budget: mBudget, spent: mSpent });
-      }
-    }
-    return months;
-  }, [dateRange, transactions, getBudgetForMonth, budgetEntries]);
+  const planTotal = planSummaryData?.planTotal ?? 0;
+  const planSpent = planSummaryData?.planSpent ?? 0;
+  const planRemaining = planSummaryData?.planRemaining ?? 0;
+  const planUsagePct = planSummaryData?.usagePercent ?? 0;
+  const planCategories = planSummaryData?.categories ?? [];
 
   if (!mounted) {
     return (
@@ -90,17 +148,173 @@ export default function Home() {
 
   return (
     <PageLayout>
-      {/* Header */}
-      <AppHeader
-        title="sesaKu"
-        dateRange={dateRange}
-        onRangeChange={setDateRange}
-      />
+      {/* Header — no dateRange picker here */}
+      <AppHeader title="sesaKu" isShowDatepicker={false} />
 
-      {/* Budget Overview */}
-      <div className="p-4 rounded-xl " style={{ background: "var(--surface)" }}>
+      {/* ── 1. REALITA VS PLAN ── */}
+      {activePlan ? (
+        <div
+          className="rounded-xl overflow-hidden"
+          style={{
+            background: "var(--surface)",
+            //  border: "1px solid var(--accent)"
+            boxShadow: "0px 1px 6px var(--accent)",
+          }}
+        >
+          {/* Card header */}
+          <div
+            className="px-4 py-3 flex items-center justify-between"
+            style={{
+              background:
+                "linear-gradient(135deg, rgba(215,25,33,0.12) 0%, rgba(91,155,246,0.08) 100%)",
+              borderBottom: "1px solid var(--border)",
+            }}
+          >
+            <div>
+              <p
+                className="text-[11px] font-semibold"
+                style={{ color: "var(--accent)" }}
+              >
+                Plan Aktif
+                <span
+                  className="font-normal ml-1"
+                  style={{ color: "var(--text-disabled)" }}
+                >
+                  {dayjs(activePlan.start_date).format("DD MMM")} –{" "}
+                  {dayjs(activePlan.end_date).format("DD MMM YY")}
+                </span>
+              </p>
+              <p
+                className="text-[16px] font-bold mt-0.5"
+                style={{ color: "var(--text-display)" }}
+              >
+                Realita vs Plan
+              </p>
+            </div>
+            <div className="text-right">
+              <p
+                className="text-[11px]"
+                style={{ color: "var(--text-secondary)" }}
+              >
+                {planRemaining >= 0 ? "Sisa Plan" : "Over Plan"}
+              </p>
+              <p
+                className="text-[15px] font-mono font-bold"
+                style={{
+                  color:
+                    planRemaining >= 0 ? "var(--success)" : "var(--accent)",
+                }}
+              >
+                {planRemaining >= 0 ? "+" : ""}
+                {formatCurrency(Math.abs(planRemaining))}
+              </p>
+            </div>
+          </div>
+
+          {/* 3-col summary */}
+          <div
+            className="grid grid-cols-3"
+            style={{
+              background: "var(--surface)",
+              borderBottom: "1px solid var(--border)",
+              borderColor: "var(--border)",
+            }}
+          >
+            <div className="px-3 py-3 text-center">
+              <p
+                className="text-[10px] uppercase font-bold tracking-wide mb-1"
+                style={{ color: "var(--text-disabled)" }}
+              >
+                Plan
+              </p>
+              <p
+                className="text-[13px] font-mono font-bold"
+                style={{ color: "rgba(91,155,246,0.95)" }}
+              >
+                {formatCurrency(planTotal)}
+              </p>
+            </div>
+            <div className="px-3 py-3 text-center border-l border-r border-[var(--border)]">
+              <p
+                className="text-[10px] uppercase font-bold tracking-wide mb-1"
+                style={{ color: "var(--text-disabled)" }}
+              >
+                Terpakai
+              </p>
+              <p
+                className="text-[13px] font-mono font-bold"
+                style={{ color: "rgba(215,25,33,0.95)" }}
+              >
+                {formatCurrency(planSpent)}
+              </p>
+            </div>
+            <div className="px-3 py-3 text-center">
+              <p
+                className="text-[10px] uppercase font-bold tracking-wide mb-1"
+                style={{ color: "var(--text-disabled)" }}
+              >
+                Usage
+              </p>
+              <p
+                className="text-[13px] font-mono font-bold"
+                style={{
+                  color:
+                    planUsagePct > 100
+                      ? "var(--accent)"
+                      : planUsagePct > 80
+                        ? "var(--warning)"
+                        : "var(--success)",
+                }}
+              >
+                {planTotal > 0
+                  ? `${Math.min(planUsagePct, 999).toFixed(0)}%`
+                  : "—"}
+              </p>
+            </div>
+          </div>
+
+          {/* Plan comparison chart */}
+          <div className="p-4" style={{ background: "var(--surface)" }}>
+            <PlanComparisonChart items={planCategories} />
+          </div>
+        </div>
+      ) : (
+        /* CTA — no plan yet */
+        <div
+          className="p-4 rounded-xl flex items-center justify-between gap-3"
+          style={{
+            background: "var(--surface)",
+            border: "1px dashed var(--border-visible)",
+          }}
+        >
+          <div>
+            <p
+              className="text-[14px] font-semibold"
+              style={{ color: "var(--text-display)" }}
+            >
+              Buat Plan Anggaran
+            </p>
+            <p
+              className="text-[12px] mt-0.5"
+              style={{ color: "var(--text-disabled)" }}
+            >
+              Bandingkan pengeluaran nyata dengan rencanamu
+            </p>
+          </div>
+          <button
+            onClick={() => navigate("/plan")}
+            className="flex-shrink-0 h-9 px-4 text-[12px] font-bold rounded-lg"
+            style={{ background: "var(--accent)", color: "white" }}
+          >
+            Atur Plan →
+          </button>
+        </div>
+      )}
+
+      {/* ── 2. BUDGET OVERVIEW (all-time) ── */}
+      <div className="p-4 rounded-xl" style={{ background: "var(--surface)" }}>
         <div className="flex justify-between items-center mb-2 flex-wrap gap-2">
-          <div className="">
+          <div>
             <p
               className="text-[12px] font-medium mb-0.5"
               style={{ color: "var(--text-secondary)" }}
@@ -116,7 +330,7 @@ export default function Home() {
               {formatCurrency(remaining)}
             </p>
           </div>
-          <div className=" sm:justify-end justify-start">
+          <div>
             <p
               className="text-[12px] whitespace-nowrap"
               style={{ color: "var(--text-secondary)" }}
@@ -125,8 +339,6 @@ export default function Home() {
             </p>
           </div>
         </div>
-
-        {/* Progress bar */}
         <div className="flex gap-2 items-center">
           <div
             className="h-2 w-full rounded-full overflow-hidden"
@@ -150,122 +362,174 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-3 gap-2">
-        <StatCard label="Transaksi" value={String(transactionCount)} />
-        <StatCard
-          label="Rata-rata/hari"
-          value={formatCurrency(dailyAvg)}
-          small
-        />
-        <StatCard
-          label="Rata-rata/Trx"
-          value={formatCurrency(avgPerTransaction)}
-          small
-        />
-      </div>
-
-      {/* Top Category */}
-      {topCategory && (
+      {/* ── 3. MONTHLY SPENDING SECTION ── */}
+      <div
+        className="rounded-xl overflow-hidden"
+        style={{ background: "var(--surface)" }}
+      >
+        {/* Month navigator — centered, with prev/next chevrons + click-to-pick */}
         <div
-          className="p-4 rounded-xl flex items-center justify-between"
-          style={{ background: "var(--surface)" }}
+          className="px-4 py-2 flex items-center justify-center"
+          style={{ borderBottom: "1px solid var(--border)" }}
         >
-          <div>
-            <p
-              className="text-[12px] mb-0.5"
-              style={{ color: "var(--text-secondary)" }}
-            >
-              Pengeluaran terbesar
-            </p>
-            <p
-              className="text-[16px] font-semibold"
-              style={{ color: "var(--text-display)" }}
-            >
-              {topCategory[0]}
-            </p>
-          </div>
-          <p
-            className="text-[16px] font-mono font-bold"
-            style={{ color: "var(--accent)" }}
-          >
-            {formatCurrency(topCategory[1])}
-          </p>
+          <MonthNavigator
+            value={selectedMonth}
+            onChange={setSelectedMonth}
+            disableFuture
+          />
         </div>
-      )}
 
-      {/* Charts */}
-      {filteredTransactions.length > 0 && (
-        <>
-          <div
-            className="p-4 rounded-xl"
-            style={{ background: "var(--surface)" }}
-          >
-            <p
-              className="text-[13px] font-medium mb-3"
-              style={{ color: "var(--text-secondary)" }}
+        {/* Quick stats for selected month */}
+        {summaryLoading ? (
+          <div className="p-6 flex justify-center">
+            <div
+              className="w-4 h-4 rounded-full"
+              style={{
+                border: "2px solid var(--accent)",
+                borderTopColor: "transparent",
+                animation: "spin 0.6s linear infinite",
+              }}
+            />
+          </div>
+        ) : (
+          <>
+            <div
+              className="grid grid-cols-3 "
+              style={{
+                borderBottom: "1px solid var(--border)",
+                borderColor: "var(--border)",
+              }}
             >
-              Kategori
-            </p>
-            <CategoryChart
-              transactions={filteredTransactions}
-              categories={categories}
-            />
-          </div>
+              <div className="px-3 py-3 text-center">
+                <p
+                  className="text-[10px] uppercase font-bold tracking-wide mb-1"
+                  style={{ color: "var(--text-disabled)" }}
+                >
+                  Transaksi
+                </p>
+                <p
+                  className="text-[18px] font-display font-bold"
+                  style={{ color: "var(--text-display)" }}
+                >
+                  {rangeCount}
+                </p>
+              </div>
+              <div className="px-3 py-3 text-center  border-l border-r border-[var(--border)]">
+                <p
+                  className="text-[10px] uppercase font-bold tracking-wide mb-1"
+                  style={{ color: "var(--text-disabled)" }}
+                >
+                  Rata/hari
+                </p>
+                <p
+                  className="text-[13px] font-mono font-bold"
+                  style={{ color: "var(--text-display)" }}
+                >
+                  {formatCurrency(dailyAvg)}
+                </p>
+              </div>
+              <div className="px-3 py-3 text-center">
+                <p
+                  className="text-[10px] uppercase font-bold tracking-wide mb-1"
+                  style={{ color: "var(--text-disabled)" }}
+                >
+                  Rata/trx
+                </p>
+                <p
+                  className="text-[13px] font-mono font-bold"
+                  style={{ color: "var(--text-display)" }}
+                >
+                  {formatCurrency(avgPerTx)}
+                </p>
+              </div>
+            </div>
 
-          <div
-            className="p-4 rounded-xl"
-            style={{ background: "var(--surface)" }}
-          >
-            <WeeklyChart
-              transactions={filteredTransactions}
-              selectedMonth={dateRange.start}
-            />
-          </div>
-        </>
-      )}
+            {/* Total for the month + top category */}
+            <div
+              className="px-4 py-3 flex items-center justify-between"
+              style={{ borderBottom: "1px solid var(--border)" }}
+            >
+              <div>
+                <p
+                  className="text-[11px]"
+                  style={{ color: "var(--text-secondary)" }}
+                >
+                  Total bulan ini
+                </p>
+                <p
+                  className="text-[20px] font-mono font-bold"
+                  style={{ color: "var(--accent)" }}
+                >
+                  {formatCurrency(rangeTotal)}
+                </p>
+              </div>
+              {topCategory && (
+                <div className="text-right">
+                  <p
+                    className="text-[11px]"
+                    style={{ color: "var(--text-secondary)" }}
+                  >
+                    Terbesar
+                  </p>
+                  <p
+                    className="text-[13px] font-semibold"
+                    style={{ color: "var(--text-display)" }}
+                  >
+                    {topCategory.name}
+                  </p>
+                  <p
+                    className="text-[12px] font-mono"
+                    style={{ color: "var(--text-disabled)" }}
+                  >
+                    {formatCurrency(topCategory.total)}
+                  </p>
+                </div>
+              )}
+            </div>
 
-      {/* Savings Trend */}
-      <div className="p-4 rounded-xl" style={{ background: "var(--surface)" }}>
-        <p
-          className="text-[13px] font-medium mb-3"
-          style={{ color: "var(--text-secondary)" }}
-        >
-          Tren Sisa Budget
-        </p>
-        <SavingsChart monthlyData={savingsData} />
+            {/* Charts */}
+            {rangeCount > 0 && (
+              <>
+                <div
+                  className="p-4"
+                  style={{ borderBottom: "1px solid var(--border)" }}
+                >
+                  <p
+                    className="text-[13px] font-medium mb-3"
+                    style={{ color: "var(--text-secondary)" }}
+                  >
+                    Kategori
+                  </p>
+                  <CategoryChart data={categoryData ?? []} />
+                </div>
+                <div className="p-4">
+                  <p
+                    className="text-[13px] font-medium mb-3"
+                    style={{ color: "var(--text-secondary)" }}
+                  >
+                    Tren Pengeluaran
+                  </p>
+                  <SpendingTrendChart data={trendData ?? []} />
+                </div>
+              </>
+            )}
+
+            {rangeCount === 0 && (
+              <div className="p-8 text-center">
+                <p
+                  className="text-[13px]"
+                  style={{ color: "var(--text-disabled)" }}
+                >
+                  Belum ada transaksi bulan ini
+                </p>
+              </div>
+            )}
+          </>
+        )}
       </div>
+
       <BottomNav />
     </PageLayout>
-  );
-}
-
-function StatCard({
-  label,
-  value,
-  small,
-  alert,
-}: {
-  label: string;
-  value: string;
-  small?: boolean;
-  alert?: boolean;
-}) {
-  return (
-    <div className="p-3 rounded-xl" style={{ background: "var(--surface)" }}>
-      <p
-        className="text-[11px] mb-1"
-        style={{ color: "var(--text-secondary)" }}
-      >
-        {label}
-      </p>
-      <p
-        className={`font-semibold leading-tight ${small ? "text-[13px] font-mono" : "text-[20px] font-display"}`}
-        style={{ color: alert ? "var(--accent)" : "var(--text-display)" }}
-      >
-        {value}
-      </p>
-    </div>
   );
 }
 

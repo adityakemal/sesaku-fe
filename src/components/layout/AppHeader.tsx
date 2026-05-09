@@ -1,4 +1,5 @@
 
+import type { ReactNode } from 'react';
 import { DateRangePicker, type DateRange } from '../DatePicker';
 
 interface AppHeaderProps {
@@ -6,6 +7,8 @@ interface AppHeaderProps {
   isShowDatepicker?: boolean;
   dateRange?: DateRange;
   onRangeChange?: (range: DateRange) => void;
+  /** Slot for any custom content rendered on the right side of the header */
+  rightSlot?: ReactNode;
 }
 
 export function AppHeader({
@@ -13,6 +16,7 @@ export function AppHeader({
   isShowDatepicker = true,
   dateRange,
   onRangeChange,
+  rightSlot,
 }: AppHeaderProps) {
   return (
     <header
@@ -32,6 +36,7 @@ export function AppHeader({
         {isShowDatepicker && dateRange && onRangeChange && (
           <DateRangePicker range={dateRange} onChange={onRangeChange} />
         )}
+        {rightSlot}
       </div>
     </header>
   );

@@ -1,7 +1,11 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import Fuse from "fuse.js";
 import dayjs from "dayjs";
+import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
+import { getTransactions } from "@/api/transactionApi";
+import type { Transaction } from "@/types";
+
 import { TransactionFormModal } from "@/components/transactions/TransactionFormModal";
 import { TransactionList } from "@/components/transactions/TransactionList";
 import { SearchInput } from "@/components/SearchInput";
@@ -13,35 +17,57 @@ import { useTheme } from "@/hooks/useTheme";
 import { useBudgetStore } from "@/store/budget";
 import { formatCurrency } from "@/utils";
 
+const PAGE_LIMIT = 20;
+
 export default function TransactionPage() {
   const { mounted } = useTheme();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [showAddModal, setShowAddModal] = useState(false);
   const [search, setSearch] = useState("");
+  
   const {
-    transactions,
     dateRange,
     setDateRange,
     totalBudget,
     totalTransaction,
   } = useBudgetStore();
 
-  const start = dayjs(dateRange.start).startOf("day").toDate();
-  const end = dayjs(dateRange.end).endOf("day").toDate();
+  const startStr = useMemo(() => dayjs(dateRange.start).startOf("day").toISOString(), [dateRange.start]);
+  const endStr = useMemo(() => dayjs(dateRange.end).endOf("day").toISOString(), [dateRange.end]);
 
-  const filteredByRange = useMemo(
-    () =>
-      transactions.filter((t) => {
-        const d = new Date(t.date);
-        return d >= start && d <= end;
-      }),
-    [transactions, start, end],
-  );
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } =
+    useInfiniteQuery({
+      queryKey: ["transactions-paginated", startStr, endStr],
+      queryFn: async ({ pageParam }) => {
+        const res = await getTransactions({
+          cursor: pageParam ?? undefined,
+          limit: PAGE_LIMIT,
+          start: startStr,
+          end: endStr,
+        });
+        return res.data;
+      },
+      getNextPageParam: (lastPage) => {
+        const hasMore = lastPage.hasMore === true || String(lastPage.hasMore) === "true";
+        return hasMore ? lastPage.nextCursor : undefined;
+      },
+      initialPageParam: null as string | null,
+    });
+
+  const transactions: Transaction[] = useMemo(() => {
+    const raw = data?.pages.flatMap((page) => page.data) || [];
+    return raw.map((t) => ({
+      ...t,
+      nominal: Number(t.nominal) || 0,
+      details: typeof t.details === "string" ? JSON.parse(t.details) : t.details,
+    }));
+  }, [data]);
 
   const fuse = useMemo(
     () =>
       new Fuse(
-        filteredByRange.map((t) => ({
+        transactions.map((t) => ({
           ...t,
           _items: t.details?.items?.map((i) => i.name).join(" ") || "",
         })),
@@ -52,20 +78,36 @@ export default function TransactionPage() {
           ignoreLocation: true,
         },
       ),
-    [filteredByRange],
+    [transactions],
   );
 
   const filteredTransactions = useMemo(() => {
-    if (!search.trim()) return filteredByRange;
+    if (!search.trim()) return transactions;
     return fuse.search(search.trim()).map((r) => r.item);
-  }, [search, fuse, filteredByRange]);
+  }, [search, fuse, transactions]);
 
-  const totalSpent = filteredTransactions.reduce(
-    (sum, t) => sum + t.nominal,
-    0,
-  );
+  // Total spent from the server (for the entire range)
+  const totalAmount = data?.pages[0]?.totalAmount ?? 0;
+  
   const remaining = totalBudget - totalTransaction;
   const progress = totalBudget > 0 ? (totalTransaction / totalBudget) * 100 : 0;
+
+  // Infinite scroll
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = loadMoreRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+          fetchNextPage();
+        }
+      },
+      { threshold: 0.1 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   if (!mounted) {
     return (
@@ -165,11 +207,14 @@ export default function TransactionPage() {
               className="text-[13px] font-mono font-bold"
               style={{ color: "var(--accent)" }}
             >
-              {formatCurrency(totalSpent)}
+              {formatCurrency(totalAmount)}
             </p>
           </div>
         </div>
       </div>
+
+      {/* Data Actions (Import/Export) */}
+      <DataActions dateRange={dateRange} />
 
       {/* Transaction List */}
       <div className="p-4 rounded-xl" style={{ background: "var(--surface)" }}>
@@ -188,7 +233,7 @@ export default function TransactionPage() {
                 color: "var(--text-primary)",
               }}
             >
-              {filteredTransactions.length}
+              {search.trim() ? filteredTransactions.length : (data?.pages[0]?.totalCount ?? 0)}
             </span>
             <button
               onClick={() => setShowAddModal(true)}
@@ -213,10 +258,31 @@ export default function TransactionPage() {
           </div>
         </div>
         <TransactionList transactions={filteredTransactions} />
+        
+        {/* Infinite scroll sentinel */}
+        <div ref={loadMoreRef} className="py-3 flex justify-center">
+          {isFetchingNextPage && (
+            <div className="flex items-center gap-2">
+              <div
+                className="w-3 h-3 rounded-full"
+                style={{
+                  border: "2px solid var(--text-disabled)",
+                  borderTopColor: "transparent",
+                  animation: "spin 0.6s linear infinite",
+                }}
+              />
+              <span className="text-[11px]" style={{ color: "var(--text-disabled)" }}>
+                Memuat...
+              </span>
+            </div>
+          )}
+          {!hasNextPage && transactions.length > PAGE_LIMIT && (
+            <p className="text-[11px]" style={{ color: "var(--text-disabled)" }}>
+              Semua transaksi sudah ditampilkan
+            </p>
+          )}
+        </div>
       </div>
-
-      {/* Data Actions (Import/Export) */}
-      <DataActions dateRange={dateRange} />
 
       {/* Add Transaction Modal */}
       <TransactionFormModal

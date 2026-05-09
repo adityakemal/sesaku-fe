@@ -7,6 +7,7 @@ import { DayPicker } from "../DatePicker";
 import { useStorageStore } from "@/store/storage";
 import { createCategory, getCategories } from "@/api/categoryApi";
 import { ErrorModal } from "@/components/ErrorModal";
+import { CategorySelect } from "@/components/CategorySelect";
 import type {
   Transaction,
   TaxItem,
@@ -58,11 +59,8 @@ export function TransactionFormModal({
   const [kategori, setKategori] = useState<string>(categories[0] || "");
   const [keterangan, setKeterangan] = useState("");
   const [date, setDate] = useState(() => now.format("YYYY-MM-DD"));
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [newCategory, setNewCategory] = useState("");
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
 
@@ -134,19 +132,12 @@ export function TransactionFormModal({
       setTaxes([]);
       setDiscounts([]);
     }
-    setDropdownOpen(false);
-    setNewCategory("");
     setShowSuggestions(false);
     setTimeout(() => nameInputRef.current?.focus(), 50);
   }, [open, editData, ocrPrefill]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(e.target as Node)
-      )
-        setDropdownOpen(false);
       if (
         suggestionsRef.current &&
         !suggestionsRef.current.contains(e.target as Node)
@@ -193,12 +184,16 @@ export function TransactionFormModal({
           .second(dayjs(editData!.date).second())
       : selectedDate.hour(now.hour()).minute(now.minute()).second(now.second());
 
+    const filteredItems = items.filter((i) => (i.price || 0) > 0 && i.name.trim());
+    const filteredTaxes = taxes.filter((t) => (t.value || 0) > 0);
+    const filteredDiscounts = discounts.filter((d) => (d.value || 0) > 0);
+
     const details =
-      items.length || taxes.length || discounts.length
+      filteredItems.length || filteredTaxes.length || filteredDiscounts.length
         ? {
-            items: items.length ? items : undefined,
-            tax: taxes.length ? taxes : undefined,
-            discount: discounts.length ? discounts : undefined,
+            items: filteredItems.length ? filteredItems : undefined,
+            tax: filteredTaxes.length ? filteredTaxes : undefined,
+            discount: filteredDiscounts.length ? filteredDiscounts : undefined,
           }
         : undefined;
 
@@ -242,31 +237,6 @@ export function TransactionFormModal({
       e.preventDefault();
       handleSubmit();
     }
-  };
-
-  const handleSelectCategory = (cat: string) => {
-    setKategori(cat);
-    setDropdownOpen(false);
-  };
-
-  const handleAddCategory = async () => {
-    const trimmed = newCategory.trim();
-    if (!trimmed) return;
-    if (
-      listCategory.some((c) => c.name.toLowerCase() === trimmed.toLowerCase())
-    )
-      return;
-    try {
-      await createCategory(trimmed);
-      const res = await getCategories();
-      setListCat(res.data);
-    } catch (err: any) {
-      setModalError(err.response?.data?.message || "Gagal menambah kategori");
-      return;
-    }
-    setKategori(trimmed);
-    setNewCategory("");
-    setDropdownOpen(false);
   };
 
   const hasInvalidItems = items.some((i) => i.price > 0 && !i.name.trim());
@@ -522,136 +492,7 @@ export function TransactionFormModal({
                 >
                   Kategori
                 </label>
-                <div className="w-full relative" ref={dropdownRef}>
-                  <button
-                    type="button"
-                    onClick={() => setDropdownOpen(!dropdownOpen)}
-                    className="w-full h-10 px-3 text-[14px] cursor-pointer rounded-lg flex items-center justify-between gap-2"
-                    style={{
-                      border: "1px solid var(--border-visible)",
-                      background: "var(--black)",
-                      color: "var(--text-primary)",
-                    }}
-                  >
-                    <span className="truncate">{kategori}</span>
-                    <svg
-                      width="12"
-                      height="12"
-                      viewBox="0 0 12 12"
-                      fill="none"
-                      style={{
-                        flexShrink: 0,
-                        transform: dropdownOpen
-                          ? "rotate(180deg)"
-                          : "rotate(0deg)",
-                        transition: "transform 0.2s",
-                      }}
-                    >
-                      <path
-                        d="M2 4L6 8L10 4"
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </button>
-                  {dropdownOpen && (
-                    <div
-                      className="absolute z-50 w-full mt-1 rounded-lg overflow-hidden"
-                      style={{
-                        border: "1px solid var(--border-visible)",
-                        background: "var(--black)",
-                        boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
-                      }}
-                    >
-                      <div style={{ maxHeight: "200px", overflowY: "auto" }}>
-                        {categories.map((k) => (
-                          <button
-                            key={k}
-                            type="button"
-                            onClick={() => handleSelectCategory(k)}
-                            className="w-full px-3 py-2.5 text-[13px] text-left cursor-pointer flex items-center gap-2"
-                            style={{
-                              background:
-                                kategori === k
-                                  ? "var(--surface)"
-                                  : "transparent",
-                              color:
-                                kategori === k
-                                  ? "var(--accent)"
-                                  : "var(--text-primary)",
-                              borderBottom: "1px solid var(--border)",
-                              fontWeight: kategori === k ? 600 : 400,
-                            }}
-                          >
-                            {kategori === k && (
-                              <svg
-                                width="10"
-                                height="10"
-                                viewBox="0 0 10 10"
-                                fill="none"
-                                style={{ flexShrink: 0 }}
-                              >
-                                <path
-                                  d="M1 5.5L3.5 8L9 2"
-                                  stroke="var(--accent)"
-                                  strokeWidth="1.5"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                />
-                              </svg>
-                            )}
-                            <span className="truncate">{k}</span>
-                          </button>
-                        ))}
-                      </div>
-                      <div
-                        className="flex items-center gap-1.5 p-2"
-                        style={{
-                          borderTop: "1px solid var(--border-visible)",
-                          background: "var(--surface)",
-                        }}
-                      >
-                        <input
-                          type="text"
-                          placeholder="Kategori baru..."
-                          value={newCategory}
-                          onChange={(e) => setNewCategory(e.target.value)}
-                          onKeyDown={(e) =>
-                            e.key === "Enter" && handleAddCategory()
-                          }
-                          className="flex-1 h-8 px-2.5 text-[12px] rounded-md"
-                          style={{
-                            border: "1px solid var(--border-visible)",
-                            background: "var(--black)",
-                            color: "var(--text-primary)",
-                            outline: "none",
-                            minWidth: 0,
-                          }}
-                        />
-                        <button
-                          type="button"
-                          onClick={handleAddCategory}
-                          className="h-8 px-2.5 text-[11px] font-mono font-bold rounded-md"
-                          style={{
-                            background: newCategory.trim()
-                              ? "var(--accent)"
-                              : "var(--border)",
-                            color: newCategory.trim()
-                              ? "white"
-                              : "var(--text-secondary)",
-                            border: "none",
-                            cursor: newCategory.trim() ? "pointer" : "default",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          + Add
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
+                <CategorySelect value={kategori} onChange={setKategori} />
               </div>
             </div>
 
