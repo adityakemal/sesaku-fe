@@ -43,8 +43,8 @@ const NAV_ITEMS = [
     ),
   },
   {
-    href: "/budget",
-    label: "Budget",
+    href: "/income",
+    label: "Pemasukan",
     icon: (active: boolean) => (
       <svg
         width="22"

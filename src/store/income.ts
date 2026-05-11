@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import dayjs from "dayjs";
-import type { BudgetState, Transaction, BudgetEntry } from "@/types";
-import { getState, getBudget, saveMonthlyBudget, updateBudget, deleteBudget } from "@/api/budgetApi";
+import type { IncomeState, Transaction, IncomeEntry } from "@/types";
+import { getState, getIncome, saveMonthlyIncome, updateIncome, deleteIncome } from "@/api/incomeApi";
 import {
   createTransaction,
   updateTransaction,
@@ -9,11 +9,11 @@ import {
 } from "@/api/transactionApi";
 import { queryClient } from "@/main";
 
-export const useBudgetStore = create<BudgetState>()((set, get) => ({
-  budgetEntries: [],
+export const useIncomeStore = create<IncomeState>()((set, get) => ({
+  incomeEntries: [],
   transactions: [],
   initialized: false,
-  totalBudget: 0,
+  totalIncome: 0,
   totalTransaction: 0,
   dateRange: (() => {
     const now = new Date();
@@ -22,8 +22,8 @@ export const useBudgetStore = create<BudgetState>()((set, get) => ({
 
   initStore: async () => {
     let transactions: Transaction[] = [];
-    let budgetEntries: BudgetEntry[] = [];
-    let totalBudget = 0;
+    let incomeEntries: IncomeEntry[] = [];
+    let totalIncome = 0;
     let totalTransaction = 0;
 
     try {
@@ -37,15 +37,15 @@ export const useBudgetStore = create<BudgetState>()((set, get) => ({
             ? JSON.parse(tx.details)
             : tx.details || undefined,
       }));
-      totalBudget = Number(stateData.totalBudget) || 0;
+      totalIncome = Number(stateData.totalIncome) || 0;
       totalTransaction = Number(stateData.totalTransaction) || 0;
     } catch (err) {
       console.error("Failed to fetch state", err);
     }
 
     try {
-      const budgetRes = await getBudget();
-      budgetEntries = (budgetRes.data || []).map((b: any) => ({
+      const incomeRes = await getIncome();
+      incomeEntries = (incomeRes.data || []).map((b: any) => ({
         id: b.id,
         date: b.date || b.created_at,
         amount: Number(b.amount) || 0,
@@ -53,13 +53,13 @@ export const useBudgetStore = create<BudgetState>()((set, get) => ({
         createdAt: b.created_at || new Date().toISOString(),
       }));
     } catch (err) {
-      console.error("Failed to fetch budget", err);
+      console.error("Failed to fetch income", err);
     }
 
     set({
       transactions,
-      budgetEntries,
-      totalBudget,
+      incomeEntries,
+      totalIncome,
       totalTransaction,
       initialized: true,
     });
@@ -68,8 +68,8 @@ export const useBudgetStore = create<BudgetState>()((set, get) => ({
   resetStore: () => {
     set({
       transactions: [],
-      budgetEntries: [],
-      totalBudget: 0,
+      incomeEntries: [],
+      totalIncome: 0,
       totalTransaction: 0,
       initialized: false,
     });
@@ -77,22 +77,22 @@ export const useBudgetStore = create<BudgetState>()((set, get) => ({
 
   setDateRange: (range) => set({ dateRange: range }),
 
-  refreshBudget: async () => {
+  refreshIncome: async () => {
     try {
-      const res = await getBudget();
-      const budgetData = res.data;
-      const budgetEntries: BudgetEntry[] = (budgetData.monthlyBudgets || []).map(
+      const res = await getIncome();
+      const incomeData = res.data;
+      const incomeEntries: IncomeEntry[] = (incomeData.monthlyIncomes || []).map(
         (b: any, idx: number) => ({
-          id: b.id || `budget-${idx}-${b.month}`,
+          id: b.id || `income-${idx}-${b.month}`,
           month: b.month,
           amount: Number(b.amount) || 0,
           note: b.note || "",
           createdAt: b.createdAt || new Date().toISOString(),
         }),
       );
-      set({ budgetEntries });
+      set({ incomeEntries });
     } catch (err) {
-      console.error("Failed to refresh budget from API", err);
+      console.error("Failed to refresh income from API", err);
     }
   },
 
@@ -103,56 +103,56 @@ export const useBudgetStore = create<BudgetState>()((set, get) => ({
     get().initStore();
   },
 
-  getBudgetForMonth: (month) => {
-    const entries = get().budgetEntries.filter((e) => {
+  getIncomeForMonth: (month) => {
+    const entries = get().incomeEntries.filter((e) => {
       return dayjs(e.date).format("YYYY-MM") === month;
     });
     return entries.reduce((sum, e) => sum + e.amount, 0);
   },
 
-  addBudgetEntry: async (entry) => {
-    const newEntry: BudgetEntry = {
+  addIncomeEntry: async (entry) => {
+    const newEntry: IncomeEntry = {
       ...entry,
       id: crypto.randomUUID(),
       date: entry.date || new Date().toISOString(),
       createdAt: new Date().toISOString(),
     };
     set((s) => ({
-      budgetEntries: [newEntry, ...s.budgetEntries],
-      totalBudget: s.totalBudget + (newEntry.amount || 0),
+      incomeEntries: [newEntry, ...s.incomeEntries],
+      totalIncome: s.totalIncome + (newEntry.amount || 0),
     }));
     try {
-      await saveMonthlyBudget({ id: newEntry.id, date: newEntry.date, amount: newEntry.amount, note: newEntry.note });
+      await saveMonthlyIncome({ id: newEntry.id, date: newEntry.date, amount: newEntry.amount, note: newEntry.note });
     } catch (error) {
       set((s) => ({
-        budgetEntries: s.budgetEntries.filter((e) => e.id !== newEntry.id),
+        incomeEntries: s.incomeEntries.filter((e) => e.id !== newEntry.id),
       }));
       throw error;
     }
   },
 
-  updateBudgetEntry: async (id, updates) => {
-    const prev = get().budgetEntries.find((e) => e.id === id);
+  updateIncomeEntry: async (id, updates) => {
+    const prev = get().incomeEntries.find((e) => e.id === id);
     if (!prev) return;
     const merged = { ...prev, ...updates };
     const delta = (merged.amount || 0) - (prev.amount || 0);
     set((s) => ({
-      budgetEntries: s.budgetEntries.map((e) =>
+      incomeEntries: s.incomeEntries.map((e) =>
         e.id === id ? merged : e,
       ),
-      totalBudget: s.totalBudget + delta,
+      totalIncome: s.totalIncome + delta,
     }));
-    await updateBudget(id, { date: merged.date, amount: merged.amount, note: merged.note });
+    await updateIncome(id, { date: merged.date, amount: merged.amount, note: merged.note });
   },
 
-  deleteBudgetEntry: async (id) => {
-    const entry = get().budgetEntries.find((e) => e.id === id);
+  deleteIncomeEntry: async (id) => {
+    const entry = get().incomeEntries.find((e) => e.id === id);
     set((s) => ({
-      budgetEntries: s.budgetEntries.filter((e) => e.id !== id),
-      totalBudget: s.totalBudget - (entry?.amount || 0),
+      incomeEntries: s.incomeEntries.filter((e) => e.id !== id),
+      totalIncome: s.totalIncome - (entry?.amount || 0),
     }));
     try {
-      await deleteBudget(id);
+      await deleteIncome(id);
     } catch {
       // optional: rollback or ignore
     }

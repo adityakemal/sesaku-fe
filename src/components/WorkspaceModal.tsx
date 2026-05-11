@@ -65,7 +65,7 @@ export default function WorkspaceModal({
               className="text-[13px] text-center mb-6"
               style={{ color: "var(--text-secondary)" }}
             >
-              Kamu diundang ke budget space lain. Pilih space yang ingin kamu akses:
+              Kamu diundang ke income space lain. Pilih space yang ingin kamu akses:
             </p>
             <div className="space-y-3">
               {spaces.map((space) => (

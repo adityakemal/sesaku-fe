@@ -9,51 +9,51 @@ import {
   DateRangePicker,
   type DateRange,
 } from "@/components/DatePicker";
-import { useBudgetStore } from "@/store/budget";
+import { useIncomeStore } from "@/store/income";
 import { formatCurrency } from "@/utils";
-import type { BudgetEntry } from "@/types";
+import type { IncomeEntry } from "@/types";
 
-export default function BudgetPage() {
+export default function IncomePage() {
   const {
-    budgetEntries,
-    addBudgetEntry,
-    updateBudgetEntry,
-    deleteBudgetEntry,
-  } = useBudgetStore();
+    incomeEntries,
+    addIncomeEntry,
+    updateIncomeEntry,
+    deleteIncomeEntry,
+  } = useIncomeStore();
   const [showAddModal, setShowAddModal] = useState(false);
   const [addKey, setAddKey] = useState(0);
-  const [editingEntry, setEditingEntry] = useState<BudgetEntry | null>(null);
-  const [deletingEntry, setDeletingEntry] = useState<BudgetEntry | null>(null);
+  const [editingEntry, setEditingEntry] = useState<IncomeEntry | null>(null);
+  const [deletingEntry, setDeletingEntry] = useState<IncomeEntry | null>(null);
   const [actionMenuOpen, setActionMenuOpen] = useState<string | null>(null);
   const [filterRange, setFilterRange] = useState<DateRange | null>(null);
 
   const monthEntries = filterRange
-    ? budgetEntries.filter((e) => {
+    ? incomeEntries.filter((e) => {
         const d = dayjs(e.date);
         return (
           d.isAfter(dayjs(filterRange.start).subtract(1, "day")) &&
           d.isBefore(dayjs(filterRange.end).add(1, "day"))
         );
       })
-    : budgetEntries;
-  const totalBudget = monthEntries.reduce((sum, e) => sum + e.amount, 0);
+    : incomeEntries;
+  const totalIncome = monthEntries.reduce((sum, e) => sum + e.amount, 0);
 
   const handleDelete = () => {
     if (!deletingEntry) return;
-    deleteBudgetEntry(deletingEntry.id);
-    toast.success("Budget dihapus");
+    deleteIncomeEntry(deletingEntry.id);
+    toast.success("Pemasukan dihapus");
     setDeletingEntry(null);
   };
 
   return (
     <PageLayout>
-      <AppHeader title="Budget" isShowDatepicker={false} />
+      <AppHeader title="Pemasukan" isShowDatepicker={false} />
 
       <div className="flex items-center justify-end">
         <DateRangePicker
           range={filterRange}
           onChange={setFilterRange}
-          placeholder="Semua budget"
+          placeholder="Semua pemasukan"
           onClear={() => setFilterRange(null)}
         />
       </div>
@@ -67,7 +67,7 @@ export default function BudgetPage() {
             className="text-[16px] font-mono font-bold"
             style={{ color: "var(--accent)" }}
           >
-            {formatCurrency(totalBudget)}
+            {formatCurrency(totalIncome)}
           </p>
           <button
             onClick={() => {
@@ -99,7 +99,7 @@ export default function BudgetPage() {
               className="text-[13px]"
               style={{ color: "var(--text-disabled)" }}
             >
-              Belum ada budget di bulan ini.
+              Belum ada pemasukan di bulan ini.
             </p>
           </div>
         ) : (
@@ -275,15 +275,15 @@ export default function BudgetPage() {
       </div>
 
       {showAddModal && (
-        <BudgetModal
+        <IncomeModal
           key={`add-${addKey}`}
           onSave={async (data) => {
-            await addBudgetEntry({
+            await addIncomeEntry({
               date: data.date,
               amount: data.amount,
               note: data.note,
             });
-            toast.success("Budget ditambahkan");
+            toast.success("Pemasukan ditambahkan");
             setShowAddModal(false);
           }}
           onClose={() => setShowAddModal(false)}
@@ -291,16 +291,16 @@ export default function BudgetPage() {
       )}
 
       {editingEntry && (
-        <BudgetModal
+        <IncomeModal
           key={editingEntry.id}
           entry={editingEntry}
           onSave={(data) => {
-            updateBudgetEntry(editingEntry.id, {
+            updateIncomeEntry(editingEntry.id, {
               amount: data.amount,
               note: data.note,
               date: data.date,
             } as any);
-            toast.success("Budget diperbarui");
+            toast.success("Pemasukan diperbarui");
             setEditingEntry(null);
           }}
           onClose={() => setEditingEntry(null)}
@@ -330,7 +330,7 @@ export default function BudgetPage() {
                 className="text-[16px] font-semibold text-center"
                 style={{ color: "var(--text-display)" }}
               >
-                Hapus Budget
+                Hapus Pemasukan
               </p>
             </div>
             <div className="p-5 text-center">
@@ -338,7 +338,7 @@ export default function BudgetPage() {
                 className="text-[14px]"
                 style={{ color: "var(--text-secondary)" }}
               >
-                Yakin ingin menghapus budget{" "}
+                Yakin ingin menghapus pemasukan{" "}
                 <span className="font-bold" style={{ color: "var(--accent)" }}>
                   {formatCurrency(deletingEntry.amount)}
                 </span>
@@ -381,12 +381,12 @@ export default function BudgetPage() {
   );
 }
 
-function BudgetModal({
+function IncomeModal({
   entry,
   onSave,
   onClose,
 }: {
-  entry?: BudgetEntry;
+  entry?: IncomeEntry;
   onSave: (data: { date: string; amount: number; note: string }) => void;
   onClose: () => void;
 }) {
@@ -449,7 +449,7 @@ function BudgetModal({
             className="text-[16px] font-semibold"
             style={{ color: "var(--text-display)" }}
           >
-            {isEdit ? "Edit Budget" : "Tambah Budget"}
+            {isEdit ? "Edit Pemasukan" : "Tambah Pemasukan"}
           </p>
           <button
             onClick={onClose}

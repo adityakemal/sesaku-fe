@@ -5,7 +5,7 @@ import { AppHeader } from "@/components/layout/AppHeader";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { logoutUser } from "@/api/authApi";
 import { getWorkspaces } from "@/api/memberApi";
-import { useBudgetStore } from "@/store/budget";
+import { useIncomeStore } from "@/store/income";
 import { useStorageStore } from "@/store/storage";
 import { useTheme } from "@/hooks/useTheme";
 
@@ -13,7 +13,7 @@ export default function SettingsPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { darkMode, toggle: toggleTheme } = useTheme();
-  const resetStore = useBudgetStore((s) => s.resetStore);
+  const resetStore = useIncomeStore((s) => s.resetStore);
   const user = useStorageStore((s) => s.user);
   const setUser = useStorageStore((s) => s.setUser);
 

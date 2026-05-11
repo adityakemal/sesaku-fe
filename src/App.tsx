@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Transaction from "./pages/Transaction";
-import Budget from "./pages/Budget";
+import Income from "./pages/Income";
 import Plan from "./pages/Plan";
 import Settings from "./pages/Settings";
 import SettingsCategory from "./pages/SettingsCategory";
@@ -12,7 +12,7 @@ import SettingsHistory from "./pages/SettingsHistory";
 import SettingsMember from "./pages/SettingsMember";
 import { checkSession } from "./api/authApi";
 import { getCategories } from "./api/categoryApi";
-import { useBudgetStore } from "./store/budget";
+import { useIncomeStore } from "./store/income";
 import { useStorageStore } from "./store/storage";
 import WorkspaceModal from "./components/WorkspaceModal";
 
@@ -24,9 +24,9 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
     staleTime: 5 * 60 * 1000,
   });
 
-  const initStore = useBudgetStore((s) => s.initStore);
-  const resetStore = useBudgetStore((s) => s.resetStore);
-  const initialized = useBudgetStore((s) => s.initialized);
+  const initStore = useIncomeStore((s) => s.initStore);
+  const resetStore = useIncomeStore((s) => s.resetStore);
+  const initialized = useIncomeStore((s) => s.initialized);
   const setUser = useStorageStore((s) => s.setUser);
   const setListCategory = useStorageStore((s) => s.setListCategory);
 
@@ -104,10 +104,10 @@ function App() {
         }
       />
       <Route
-        path="/budget"
+        path="/income"
         element={
           <PrivateRoute>
-            <Budget />
+            <Income />
           </PrivateRoute>
         }
       />

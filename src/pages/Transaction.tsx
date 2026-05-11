@@ -14,7 +14,7 @@ import { DataActions } from "@/components/DataActions";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { useTheme } from "@/hooks/useTheme";
-import { useBudgetStore } from "@/store/budget";
+import { useIncomeStore } from "@/store/income";
 import { formatCurrency } from "@/utils";
 
 const PAGE_LIMIT = 20;
@@ -29,9 +29,9 @@ export default function TransactionPage() {
   const {
     dateRange,
     setDateRange,
-    totalBudget,
+    totalIncome,
     totalTransaction,
-  } = useBudgetStore();
+  } = useIncomeStore();
 
   const startStr = useMemo(() => dayjs(dateRange.start).startOf("day").toISOString(), [dateRange.start]);
   const endStr = useMemo(() => dayjs(dateRange.end).endOf("day").toISOString(), [dateRange.end]);
@@ -89,8 +89,8 @@ export default function TransactionPage() {
   // Total spent from the server (for the entire range)
   const totalAmount = data?.pages[0]?.totalAmount ?? 0;
   
-  const remaining = totalBudget - totalTransaction;
-  const progress = totalBudget > 0 ? (totalTransaction / totalBudget) * 100 : 0;
+  const remaining = totalIncome - totalTransaction;
+  const progress = totalIncome > 0 ? (totalTransaction / totalIncome) * 100 : 0;
 
   // Infinite scroll
   const loadMoreRef = useRef<HTMLDivElement>(null);
@@ -141,7 +141,7 @@ export default function TransactionPage() {
         <div
           role="button"
           tabIndex={0}
-          onClick={() => navigate("/budget")}
+          onClick={() => navigate("/income")}
           className=" p-4 rounded-xl flex-1"
           style={{
             background: "var(--surface)",
@@ -168,7 +168,7 @@ export default function TransactionPage() {
                 className="text-[10px]"
                 style={{ color: "var(--text-disabled)" }}
               >
-                Sisa budget
+                Sisa saldo
               </p>
               <p
                 className="text-[15px] font-semibold"
@@ -182,7 +182,7 @@ export default function TransactionPage() {
                 className="text-[11px]"
                 style={{ color: "var(--text-secondary)" }}
               >
-                dari {formatCurrency(totalBudget)}
+                dari {formatCurrency(totalIncome)}
               </p> */}
             </div>
           </div>

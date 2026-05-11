@@ -11,7 +11,7 @@ import { BottomNav } from "@/components/layout/BottomNav";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { useTheme } from "@/hooks/useTheme";
-import { useBudgetStore } from "@/store/budget";
+import { useIncomeStore } from "@/store/income";
 import { useStorageStore } from "@/store/storage";
 import { formatCurrency } from "@/utils";
 import { CategorySelect } from "@/components/CategorySelect";
@@ -34,7 +34,7 @@ export default function PlanPage() {
   const allCategories = useStorageStore((s) => s.listCategory).map(
     (c) => c.name,
   );
-  const { transactions } = useBudgetStore();
+  const { transactions } = useIncomeStore();
 
   // ── Data fetching ──────────────────────────────────────────────────────────
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } =

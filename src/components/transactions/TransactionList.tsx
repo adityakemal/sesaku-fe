@@ -3,7 +3,7 @@ import dayjs from "dayjs";
 import toast from "react-hot-toast";
 import type { Transaction } from "@/types";
 import { formatCurrency } from "@/utils";
-import { useBudgetStore } from "@/store/budget";
+import { useIncomeStore } from "@/store/income";
 import { TransactionFormModal } from "./TransactionFormModal";
 
 interface TransactionListProps {
@@ -14,7 +14,7 @@ type SortField = "date" | "name" | "nominal" | "source" | "kategori";
 type SortOrder = "asc" | "desc";
 
 export function TransactionList({ transactions }: TransactionListProps) {
-  const { deleteTransaction } = useBudgetStore();
+  const { deleteTransaction } = useIncomeStore();
   const [sortField, setSortField] = useState<SortField>("date");
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
   const [editingTx, setEditingTx] = useState<Transaction | null>(null);

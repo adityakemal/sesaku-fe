@@ -379,19 +379,19 @@ export function PlanComparisonChart({ items }: PlanComparisonChartProps) {
 // ── 4. SAVINGS CHART (unchanged — already accepts aggregated data) ─────────
 
 interface SavingsChartProps {
-  monthlyData: { month: string; budget: number; spent: number }[];
+  monthlyData: { month: string; income: number; spent: number }[];
 }
 
 export function SavingsChart({ monthlyData }: SavingsChartProps) {
   const data = useMemo(() => {
     const labels = monthlyData.map((d) => dayjs(d.month + "-01").format("MMM"));
-    const savings = monthlyData.map((d) => d.budget - d.spent);
+    const savings = monthlyData.map((d) => d.income - d.spent);
 
     return {
       labels,
       datasets: [
         {
-          label: "Sisa Budget",
+          label: "Sisa Saldo",
           data: savings,
           borderColor: "rgba(74, 158, 92, 0.9)",
           backgroundColor: "rgba(74, 158, 92, 0.1)",

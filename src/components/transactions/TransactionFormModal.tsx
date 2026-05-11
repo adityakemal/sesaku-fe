@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useMemo } from "react";
 import Fuse from "fuse.js";
 import dayjs from "dayjs";
 import toast from "react-hot-toast";
-import { useBudgetStore } from "@/store/budget";
+import { useIncomeStore } from "@/store/income";
 import { DayPicker } from "../DatePicker";
 import { useStorageStore } from "@/store/storage";
 import { createCategory, getCategories } from "@/api/categoryApi";
@@ -41,7 +41,7 @@ export function TransactionFormModal({
   editData,
   ocrPrefill,
 }: TransactionFormModalProps) {
-  const { transactions, addTransaction, updateTransaction } = useBudgetStore();
+  const { transactions, addTransaction, updateTransaction } = useIncomeStore();
   const listCategory = useStorageStore((s) => s.listCategory);
   const setListCat = useStorageStore((s) => s.setListCategory);
   const categories = useMemo(

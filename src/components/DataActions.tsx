@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import Papa from "papaparse";
 import dayjs from "dayjs";
-import { useBudgetStore } from "@/store/budget";
+import { useIncomeStore } from "@/store/income";
 import { useStorageStore } from "@/store/storage";
 import type { Transaction } from "@/types";
 import type { DateRange } from "@/components/DatePicker";
@@ -13,7 +13,7 @@ interface DataActionsProps {
 }
 
 export function DataActions({ dateRange }: DataActionsProps) {
-  const { transactions, importData } = useBudgetStore();
+  const { transactions, importData } = useIncomeStore();
   const user = useStorageStore((s) => s.user);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const ocrInputRef = useRef<HTMLInputElement>(null);

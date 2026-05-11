@@ -11,7 +11,7 @@ import { BottomNav } from "@/components/layout/BottomNav";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { useTheme } from "@/hooks/useTheme";
-import { useBudgetStore } from "@/store/budget";
+import { useIncomeStore } from "@/store/income";
 import { formatCurrency } from "@/utils";
 import { MonthNavigator } from "@/components/MonthNavigator";
 import {
@@ -39,8 +39,8 @@ export default function Home() {
     [selectedMonth],
   );
 
-  // Global budget info (all-time) from the store
-  const { totalBudget, totalTransaction } = useBudgetStore();
+  // Global income info (all-time) from the store
+  const { totalIncome, totalTransaction } = useIncomeStore();
 
   // ── Fetch active plan list ──────────────────────────────────────────────
   const { data: plansData } = useQuery({
@@ -113,8 +113,8 @@ export default function Home() {
   });
 
   // ── Derived from summary ────────────────────────────────────────────────
-  const remaining = totalBudget - totalTransaction;
-  const progress = totalBudget > 0 ? (totalTransaction / totalBudget) * 100 : 0;
+  const remaining = totalIncome - totalTransaction;
+  const progress = totalIncome > 0 ? (totalTransaction / totalIncome) * 100 : 0;
 
   const rangeTotal = summaryData?.rangeTotal ?? 0;
   const rangeCount = summaryData?.rangeCount ?? 0;
@@ -366,7 +366,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* ── 2. BUDGET OVERVIEW (all-time) ── */}
+      {/* ── 2. INCOME OVERVIEW (all-time) ── */}
       <div className="p-4 rounded-xl" style={{ background: "var(--surface)" }}>
         <div className="flex justify-between items-center mb-2 flex-wrap gap-2">
           <div>
@@ -374,7 +374,7 @@ export default function Home() {
               className="text-[12px] font-medium mb-0.5"
               style={{ color: "var(--text-secondary)" }}
             >
-              Sisa Budget
+              Sisa Saldo
             </p>
             <p
               className="text-2xl md:text-4xl font-bold font-display leading-none whitespace-nowrap"
@@ -390,7 +390,7 @@ export default function Home() {
               className="text-[12px] whitespace-nowrap"
               style={{ color: "var(--text-secondary)" }}
             >
-              {formatCurrency(totalTransaction)} / {formatCurrency(totalBudget)}
+              {formatCurrency(totalTransaction)} / {formatCurrency(totalIncome)}
             </p>
           </div>
         </div>

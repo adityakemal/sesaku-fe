@@ -61,7 +61,7 @@ export interface MonthlyBudget {
   amount: number;
 }
 
-export interface BudgetEntry {
+export interface IncomeEntry {
   id: string;
   date: string; // ISO timestamp
   amount: number;
@@ -69,26 +69,26 @@ export interface BudgetEntry {
   createdAt: string;
 }
 
-export interface BudgetState {
+export interface IncomeState {
   // Data
-  budgetEntries: BudgetEntry[];
+  incomeEntries: IncomeEntry[];
   transactions: Transaction[];
   initialized: boolean;
   dateRange: { start: Date; end: Date };
-  totalBudget: number;
+  totalIncome: number;
   totalTransaction: number;
 
-  // Budget actions
-  getBudgetForMonth: (month: string) => number;
+  // Income actions
+  getIncomeForMonth: (month: string) => number;
   setDateRange: (range: { start: Date; end: Date }) => void;
-  addBudgetEntry: (
-    entry: Omit<BudgetEntry, "id" | "createdAt" | "date"> & { date?: string },
+  addIncomeEntry: (
+    entry: Omit<IncomeEntry, "id" | "createdAt" | "date"> & { date?: string },
   ) => Promise<void>;
-  updateBudgetEntry: (
+  updateIncomeEntry: (
     id: string,
-    updates: Partial<Pick<BudgetEntry, "amount" | "note" | "date">>,
+    updates: Partial<Pick<IncomeEntry, "amount" | "note" | "date">>,
   ) => Promise<void>;
-  deleteBudgetEntry: (id: string) => Promise<void>;
+  deleteIncomeEntry: (id: string) => Promise<void>;
 
   // Transaction actions
   addTransaction: (

@@ -3,7 +3,7 @@ import { apiClient } from "./client";
 // ── Types ──────────────────────────────────────────────────────────────────
 
 export interface DashboardSummary {
-  totalBudget: number;
+  totalIncome: number;
   totalTransaction: number;
   rangeTotal: number;
   rangeCount: number;
