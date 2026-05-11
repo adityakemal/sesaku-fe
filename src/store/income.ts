@@ -1,7 +1,13 @@
 import { create } from "zustand";
 import dayjs from "dayjs";
 import type { IncomeState, Transaction, IncomeEntry } from "@/types";
-import { getState, getIncome, saveMonthlyIncome, updateIncome, deleteIncome } from "@/api/incomeApi";
+import {
+  getState,
+  getIncome,
+  saveMonthlyIncome,
+  updateIncome,
+  deleteIncome,
+} from "@/api/incomeApi";
 import {
   createTransaction,
   updateTransaction,
@@ -81,15 +87,15 @@ export const useIncomeStore = create<IncomeState>()((set, get) => ({
     try {
       const res = await getIncome();
       const incomeData = res.data;
-      const incomeEntries: IncomeEntry[] = (incomeData.monthlyIncomes || []).map(
-        (b: any, idx: number) => ({
-          id: b.id || `income-${idx}-${b.month}`,
-          month: b.month,
-          amount: Number(b.amount) || 0,
-          note: b.note || "",
-          createdAt: b.createdAt || new Date().toISOString(),
-        }),
-      );
+      const incomeEntries: IncomeEntry[] = (
+        incomeData.monthlyIncomes || []
+      ).map((b: any, idx: number) => ({
+        id: b.id || `income-${idx}-${b.month}`,
+        month: b.month,
+        amount: Number(b.amount) || 0,
+        note: b.note || "",
+        createdAt: b.createdAt || new Date().toISOString(),
+      }));
       set({ incomeEntries });
     } catch (err) {
       console.error("Failed to refresh income from API", err);
@@ -122,7 +128,12 @@ export const useIncomeStore = create<IncomeState>()((set, get) => ({
       totalIncome: s.totalIncome + (newEntry.amount || 0),
     }));
     try {
-      await saveMonthlyIncome({ id: newEntry.id, date: newEntry.date, amount: newEntry.amount, note: newEntry.note });
+      await saveMonthlyIncome({
+        id: newEntry.id,
+        date: newEntry.date,
+        amount: newEntry.amount,
+        note: newEntry.note,
+      });
     } catch (error) {
       set((s) => ({
         incomeEntries: s.incomeEntries.filter((e) => e.id !== newEntry.id),
@@ -137,12 +148,14 @@ export const useIncomeStore = create<IncomeState>()((set, get) => ({
     const merged = { ...prev, ...updates };
     const delta = (merged.amount || 0) - (prev.amount || 0);
     set((s) => ({
-      incomeEntries: s.incomeEntries.map((e) =>
-        e.id === id ? merged : e,
-      ),
+      incomeEntries: s.incomeEntries.map((e) => (e.id === id ? merged : e)),
       totalIncome: s.totalIncome + delta,
     }));
-    await updateIncome(id, { date: merged.date, amount: merged.amount, note: merged.note });
+    await updateIncome(id, {
+      date: merged.date,
+      amount: merged.amount,
+      note: merged.note,
+    });
   },
 
   deleteIncomeEntry: async (id) => {
@@ -171,7 +184,7 @@ export const useIncomeStore = create<IncomeState>()((set, get) => ({
     }));
     try {
       await createTransaction(newTx);
-      queryClient.invalidateQueries({ queryKey: ["transactions-paginated"] });
+      queryClient.invalidateQueries({ queryKey: ["transactions-all"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] });
       queryClient.invalidateQueries({ queryKey: ["category-breakdown"] });
       queryClient.invalidateQueries({ queryKey: ["spending-trend"] });
@@ -187,7 +200,7 @@ export const useIncomeStore = create<IncomeState>()((set, get) => ({
   updateTransaction: async (id, updates) => {
     const tx = { ...updates } as Transaction; // optimistic assumption, we don't have prev easily
     await updateTransaction(id, tx);
-    queryClient.invalidateQueries({ queryKey: ["transactions-paginated"] });
+    queryClient.invalidateQueries({ queryKey: ["transactions-all"] });
     queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] });
     queryClient.invalidateQueries({ queryKey: ["category-breakdown"] });
     queryClient.invalidateQueries({ queryKey: ["spending-trend"] });
@@ -196,7 +209,7 @@ export const useIncomeStore = create<IncomeState>()((set, get) => ({
 
   deleteTransaction: async (id) => {
     await deleteTransaction(id);
-    queryClient.invalidateQueries({ queryKey: ["transactions-paginated"] });
+    queryClient.invalidateQueries({ queryKey: ["transactions-all"] });
     queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] });
     queryClient.invalidateQueries({ queryKey: ["category-breakdown"] });
     queryClient.invalidateQueries({ queryKey: ["spending-trend"] });

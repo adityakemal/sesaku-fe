@@ -7,6 +7,8 @@ interface AppHeaderProps {
   isShowDatepicker?: boolean;
   dateRange?: DateRange;
   onRangeChange?: (range: DateRange) => void;
+  /** Max selectable date range in days for the date picker (e.g. 90). Default: unlimited. */
+  maxRangeDays?: number;
   /** Slot for any custom content rendered on the right side of the header */
   rightSlot?: ReactNode;
 }
@@ -16,6 +18,7 @@ export function AppHeader({
   isShowDatepicker = true,
   dateRange,
   onRangeChange,
+  maxRangeDays,
   rightSlot,
 }: AppHeaderProps) {
   return (
@@ -34,7 +37,7 @@ export function AppHeader({
       </h1>
       <div className="flex items-center gap-2">
         {isShowDatepicker && dateRange && onRangeChange && (
-          <DateRangePicker range={dateRange} onChange={onRangeChange} />
+          <DateRangePicker range={dateRange} onChange={onRangeChange} maxRangeDays={maxRangeDays} />
         )}
         {rightSlot}
       </div>

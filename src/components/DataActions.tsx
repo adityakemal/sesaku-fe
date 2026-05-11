@@ -3,11 +3,11 @@ import Papa from "papaparse";
 import dayjs from "dayjs";
 import toast from "react-hot-toast";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
-import { LuChevronDown, LuScan } from "react-icons/lu";
+import { LuChevronDown, LuScan, LuDownload, LuX } from "react-icons/lu";
 import { useIncomeStore } from "@/store/income";
 import { useStorageStore } from "@/store/storage";
 import type { Transaction } from "@/types";
-import type { DateRange } from "@/components/DatePicker";
+import { DateRangePicker, type DateRange } from "@/components/DatePicker";
 import { TransactionFormModal } from "./transactions/TransactionFormModal";
 import { scanReceipt } from "@/api/ocrApi";
 import { getTransactions } from "@/api/transactionApi";
@@ -24,6 +24,11 @@ export function DataActions({ dateRange }: DataActionsProps) {
   const [isScanning, setIsScanning] = useState(false);
   const [ocrPrefill, setOcrPrefill] = useState<any>(null);
   const [isOcrModalOpen, setIsOcrModalOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportModalOpen, setExportModalOpen] = useState(false);
+  const [exportRange, setExportRange] = useState<DateRange | null>(
+    dateRange ?? null,
+  );
 
   const downloadCSV = (data: any[], filename: string) => {
     const csv = Papa.unparse(data);
@@ -60,17 +65,15 @@ export function DataActions({ dateRange }: DataActionsProps) {
     downloadCSV(template, "template_transaksi.csv");
   };
 
-  const [isExporting, setIsExporting] = useState(false);
-
   const handleExport = async () => {
+    if (!exportRange) return;
+    setExportModalOpen(false);
     setIsExporting(true);
     try {
       const res = await getTransactions({
         all: "true",
-        ...(dateRange && {
-          start: dayjs(dateRange.start).startOf("day").toISOString(),
-          end: dayjs(dateRange.end).endOf("day").toISOString(),
-        }),
+        start: dayjs(exportRange.start).startOf("day").toISOString(),
+        end: dayjs(exportRange.end).endOf("day").toISOString(),
       });
       const allTx = res.data.data ?? [];
 
@@ -95,14 +98,18 @@ export function DataActions({ dateRange }: DataActionsProps) {
               details.tax
                 ?.map(
                   (tx: any) =>
-                    `${tx.name}: ${tx.type === "percent" ? tx.value + "%" : tx.value}`,
+                    `${tx.name}: ${
+                      tx.type === "percent" ? tx.value + "%" : tx.value
+                    }`,
                 )
                 .join(" | ") || "",
             discount:
               details.discount
                 ?.map(
                   (d: any) =>
-                    `${d.name}: ${d.type === "percent" ? d.value + "%" : d.value}`,
+                    `${d.name}: ${
+                      d.type === "percent" ? d.value + "%" : d.value
+                    }`,
                 )
                 .join(" | ") || "",
           };
@@ -114,20 +121,17 @@ export function DataActions({ dateRange }: DataActionsProps) {
         user?.name?.replace(/\s+/g, "_").toLowerCase() ||
         user?.email?.split("@")[0] ||
         "user";
-      const dateStr = dateRange
-        ? `${dayjs(dateRange.start).format("DD-MM-YYYY")}_${dayjs(dateRange.end).format("DD-MM-YYYY")}`
-        : "all";
+      const dateStr = `${dayjs(exportRange.start).format("DD-MM-YYYY")}_${dayjs(exportRange.end).format("DD-MM-YYYY")}`;
       downloadCSV(csv, `sesaku-data-${username}-${dateStr}.csv`);
     } catch (err) {
       console.error("Export failed:", err);
+      toast.error("Gagal mengunduh data. Coba lagi.");
     } finally {
       setIsExporting(false);
     }
   };
 
-  const handleImportClick = () => {
-    fileInputRef.current?.click();
-  };
+  const handleImportClick = () => fileInputRef.current?.click();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -421,19 +425,16 @@ export function DataActions({ dateRange }: DataActionsProps) {
               Contoh Format
             </button>
             <button
-              onClick={handleExport}
-              disabled={isExporting}
-              className="w-full h-11 text-[13px] font-medium rounded-lg"
+              onClick={() => setExportModalOpen(true)}
+              className="w-full h-11 text-[13px] font-medium rounded-lg flex items-center justify-center gap-1.5"
               style={{
                 border: "1px solid var(--border-visible)",
-                color: isExporting
-                  ? "var(--text-disabled)"
-                  : "var(--text-secondary)",
+                color: "var(--text-secondary)",
                 background: "transparent",
-                cursor: isExporting ? "not-allowed" : "pointer",
               }}
             >
-              {isExporting ? "Mengunduh..." : "Unduh Data"}
+              <LuDownload size={14} />
+              Unduh Data
             </button>
             <button
               onClick={handleImportClick}
@@ -511,6 +512,127 @@ export function DataActions({ dateRange }: DataActionsProps) {
           <p className="text-white/80 text-sm mt-2">
             Mohon tunggu, AI sedang membaca data struk.
           </p>
+        </div>
+      )}
+
+      {/* ── Export modal ─────────────────────────────────── */}
+      {exportModalOpen && (
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center p-4"
+          style={{ background: "rgba(0,0,0,0.65)" }}
+          onClick={(e) => e.target === e.currentTarget && setExportModalOpen(false)}
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl overflow-hidden shadow-2xl"
+            style={{
+              background: "var(--surface)",
+              border: "1px solid var(--border-visible)",
+            }}
+          >
+            {/* Header */}
+            <div
+              className="flex items-center justify-between px-5 py-4"
+              style={{ borderBottom: "1px solid var(--border)" }}
+            >
+              <div className="flex items-center gap-2">
+                <LuDownload size={16} color="var(--accent)" />
+                <p className="text-[15px] font-semibold" style={{ color: "var(--text-display)" }}>
+                  Unduh Data CSV
+                </p>
+              </div>
+              <button
+                onClick={() => setExportModalOpen(false)}
+                className="w-7 h-7 flex items-center justify-center rounded-full"
+                style={{ background: "var(--border)", border: "none", color: "var(--text-secondary)", cursor: "pointer" }}
+              >
+                <LuX size={14} />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="px-5 py-5 flex flex-col gap-4">
+              <div>
+                <p className="text-[12px] mb-2 font-medium" style={{ color: "var(--text-secondary)" }}>
+                  Pilih rentang tanggal data yang ingin diunduh
+                </p>
+                <DateRangePicker
+                  range={exportRange}
+                  onChange={setExportRange}
+                  placeholder="Pilih tanggal..."
+                />
+              </div>
+
+              {exportRange && (
+                <div
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg text-[12px]"
+                  style={{ background: "rgba(91,155,246,0.1)", color: "var(--accent)" }}
+                >
+                  <LuDownload size={12} />
+                  <span>
+                    {dayjs(exportRange.start).format("DD MMM YYYY")} —{" "}
+                    {dayjs(exportRange.end).format("DD MMM YYYY")}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div
+              className="px-5 py-4 flex gap-3"
+              style={{ borderTop: "1px solid var(--border)" }}
+            >
+              <button
+                onClick={() => setExportModalOpen(false)}
+                className="flex-1 h-11 rounded-xl text-[13px] font-medium"
+                style={{
+                  border: "1px solid var(--border-visible)",
+                  color: "var(--text-secondary)",
+                  background: "transparent",
+                }}
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleExport}
+                disabled={!exportRange}
+                className="flex-1 h-11 rounded-xl text-[13px] font-bold flex items-center justify-center gap-2 disabled:opacity-40"
+                style={{
+                  background: "var(--accent)",
+                  color: "white",
+                  border: "none",
+                  cursor: exportRange ? "pointer" : "not-allowed",
+                }}
+              >
+                <LuDownload size={14} />
+                Unduh Sekarang
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Download loading overlay ──────────────────────── */}
+      {isExporting && (
+        <div className="fixed inset-0 z-[300] flex flex-col items-center justify-center bg-black/70 backdrop-blur-sm">
+          <div className="flex flex-col items-center gap-4 px-8 py-8 rounded-2xl" style={{ background: "var(--surface)", border: "1px solid var(--border-visible)", minWidth: 240 }}>
+            <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: "rgba(91,155,246,0.15)" }}>
+              <LuDownload size={22} color="var(--accent)" />
+            </div>
+            <div className="text-center">
+              <p className="text-[15px] font-semibold" style={{ color: "var(--text-display)" }}>Menyiapkan file...</p>
+              <p className="text-[12px] mt-1" style={{ color: "var(--text-secondary)" }}>Sedang mengambil dan menyusun data transaksi</p>
+            </div>
+            <div className="w-full h-1 rounded-full overflow-hidden" style={{ background: "var(--border)" }}>
+              <div
+                className="h-full rounded-full"
+                style={{
+                  width: "60%",
+                  background: "var(--accent)",
+                  animation: "pulse 1.4s ease-in-out infinite",
+                }}
+              />
+            </div>
+          </div>
         </div>
       )}
     </>

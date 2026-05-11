@@ -2,11 +2,11 @@ import React, { useState } from "react";
 import dayjs from "dayjs";
 import toast from "react-hot-toast";
 import type { Transaction } from "@/types";
-import { 
-  LuChevronsUpDown, 
-  LuChevronUp, 
-  LuChevronDown, 
-  LuEllipsisVertical 
+import {
+  LuChevronsUpDown,
+  LuChevronUp,
+  LuChevronDown,
+  LuEllipsisVertical,
 } from "react-icons/lu";
 import { formatCurrency } from "@/utils";
 import { useIncomeStore } from "@/store/income";
@@ -46,7 +46,8 @@ export function TransactionList({ transactions }: TransactionListProps) {
     return (
       <div className="text-center py-10">
         <p className="text-[14px]" style={{ color: "var(--text-disabled)" }}>
-          Belum ada transaksi
+          Belum ada transaksi di periode ini. <br />
+          Pastikan rentang tanggal sudah sesuai ya!
         </p>
       </div>
     );
@@ -78,8 +79,7 @@ export function TransactionList({ transactions }: TransactionListProps) {
   const SortIcon = ({ field }: { field: SortField }) => {
     if (sortField !== field)
       return <LuChevronsUpDown size={12} className="opacity-30" />;
-    if (sortOrder === "asc")
-      return <LuChevronUp size={12} />;
+    if (sortOrder === "asc") return <LuChevronUp size={12} />;
     return <LuChevronDown size={12} />;
   };
 

@@ -1,9 +1,10 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Fuse from "fuse.js";
 import dayjs from "dayjs";
-import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getTransactions } from "@/api/transactionApi";
+import { LuPlus } from "react-icons/lu";
 import type { Transaction } from "@/types";
 
 import { TransactionFormModal } from "@/components/transactions/TransactionFormModal";
@@ -17,92 +18,56 @@ import { useTheme } from "@/hooks/useTheme";
 import { useIncomeStore } from "@/store/income";
 import { formatCurrency } from "@/utils";
 
-const PAGE_LIMIT = 20;
-
 export default function TransactionPage() {
   const { mounted } = useTheme();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [showAddModal, setShowAddModal] = useState(false);
   const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
 
-  // Debounce: only trigger server search after user stops typing 300ms
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearch(search.trim()), 300);
-    return () => clearTimeout(timer);
-  }, [search]);
+  const { dateRange, setDateRange, totalIncome, totalTransaction } =
+    useIncomeStore();
 
-  const isSearching = debouncedSearch.length > 0;
-  
-  const {
-    dateRange,
-    setDateRange,
-    totalIncome,
-    totalTransaction,
-  } = useIncomeStore();
+  const startStr = useMemo(
+    () => dayjs(dateRange.start).startOf("day").toISOString(),
+    [dateRange.start],
+  );
+  const endStr = useMemo(
+    () => dayjs(dateRange.end).endOf("day").toISOString(),
+    [dateRange.end],
+  );
 
-  const startStr = useMemo(() => dayjs(dateRange.start).startOf("day").toISOString(), [dateRange.start]);
-  const endStr = useMemo(() => dayjs(dateRange.end).endOf("day").toISOString(), [dateRange.end]);
-
-  // ── Paginated list (no search) ──────────────────────────────────────────
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } =
-    useInfiniteQuery({
-      queryKey: ["transactions-paginated", startStr, endStr],
-      queryFn: async ({ pageParam }) => {
-        const res = await getTransactions({
-          cursor: pageParam ?? undefined,
-          limit: PAGE_LIMIT,
-          start: startStr,
-          end: endStr,
-        });
-        return res.data;
-      },
-      getNextPageParam: (lastPage) => {
-        const hasMore = lastPage.hasMore === true || String(lastPage.hasMore) === "true";
-        return hasMore ? lastPage.nextCursor : undefined;
-      },
-      initialPageParam: null as string | null,
-      enabled: !isSearching, // pause when search is active
-    });
-
-  // ── Server search (pg_trgm, all matching rows) ──────────────────────────
-  const { data: searchData, isLoading: isSearchLoading } = useQuery({
-    queryKey: ["transactions-search", debouncedSearch, startStr, endStr],
+  // ── Fetch all transactions in the date range ────────────────────────────
+  const { data, isLoading } = useQuery({
+    queryKey: ["transactions-all", startStr, endStr],
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 5 * 60 * 1000, // 5 minutes
     queryFn: async () => {
-      const res = await getTransactions({ search: debouncedSearch, start: startStr, end: endStr });
+      const res = await getTransactions({
+        all: "true",
+        start: startStr,
+        end: endStr,
+      });
       return res.data;
     },
-    enabled: isSearching,
   });
 
-  // Fuse.js only runs on loaded paginated data (when not in search mode)
-  const paginatedTx: Transaction[] = useMemo(() => {
-    const raw = data?.pages.flatMap((page) => page.data) || [];
+  // Fuse.js only runs on loaded data (when not in search mode)
+  const allTx: Transaction[] = useMemo(() => {
+    const raw = data?.data || [];
     return raw.map((t) => ({
       ...t,
       nominal: Number(t.nominal) || 0,
-      details: typeof t.details === "string" ? JSON.parse(t.details) : t.details,
+      details:
+        typeof t.details === "string" ? JSON.parse(t.details) : t.details,
     }));
   }, [data]);
-
-  const serverSearchTx: Transaction[] = useMemo(() => {
-    const raw = searchData?.data ?? [];
-    return raw.map((t) => ({
-      ...t,
-      nominal: Number(t.nominal) || 0,
-      details: typeof t.details === "string" ? JSON.parse(t.details) : t.details,
-    }));
-  }, [searchData]);
-
-  // Active transactions shown in list
-  const transactions = isSearching ? serverSearchTx : paginatedTx;
 
   // Fuse.js: only for instant local highlight when not in server-search mode
   const fuse = useMemo(
     () =>
       new Fuse(
-        paginatedTx.map((t) => ({
+        allTx.map((t) => ({
           ...t,
           _items: t.details?.items?.map((i) => i.name).join(" ") || "",
         })),
@@ -113,38 +78,19 @@ export default function TransactionPage() {
           ignoreLocation: true,
         },
       ),
-    [paginatedTx],
+    [allTx],
   );
 
-  // filteredTransactions: server results (isSearching) or local Fuse (typing but < debounce)
+  // filteredTransactions: local Fuse
   const filteredTransactions = useMemo(() => {
-    if (isSearching) return serverSearchTx;
     if (search.trim()) return fuse.search(search.trim()).map((r) => r.item);
-    return paginatedTx;
-  }, [isSearching, search, serverSearchTx, fuse, paginatedTx]);
+    return allTx;
+  }, [search, fuse, allTx]);
 
   // Total spent from the server (for the entire range)
-  const totalAmount = data?.pages[0]?.totalAmount ?? 0;
-  
-  const remaining = totalIncome - totalTransaction;
-  const progress = totalIncome > 0 ? (totalTransaction / totalIncome) * 100 : 0;
+  const totalAmount = data?.totalAmount ?? 0;
 
-  // Infinite scroll
-  const loadMoreRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const el = loadMoreRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
-          fetchNextPage();
-        }
-      },
-      { threshold: 0.1 },
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+  const remaining = totalIncome - totalTransaction;
 
   if (!mounted) {
     return (
@@ -171,6 +117,7 @@ export default function TransactionPage() {
         title="Transaksi"
         dateRange={dateRange}
         onRangeChange={setDateRange}
+        maxRangeDays={90}
       />
 
       {/* Budget summary bar */}
@@ -187,20 +134,6 @@ export default function TransactionPage() {
         >
           <div className="flex items-center justify-between">
             <div className="">
-              {/* <div
-                className="w-12 h-12 rounded-xl flex items-center justify-center text-[15px] font-bold"
-                style={{
-                  background:
-                    remaining < 0
-                      ? "rgba(215,25,33,0.15)"
-                      : "rgba(74,158,92,0.15)",
-                  color: remaining < 0 ? "var(--accent)" : "var(--success)",
-                }}
-              >
-                {progress > 100
-                  ? "!"
-                  : `${Math.min(progress, 100).toFixed(0)}%`}
-              </div> */}
               <p
                 className="text-[10px]"
                 style={{ color: "var(--text-disabled)" }}
@@ -215,12 +148,6 @@ export default function TransactionPage() {
               >
                 {formatCurrency(remaining)}
               </p>
-              {/* <p
-                className="text-[11px]"
-                style={{ color: "var(--text-secondary)" }}
-              >
-                dari {formatCurrency(totalIncome)}
-              </p> */}
             </div>
           </div>
         </div>
@@ -270,7 +197,9 @@ export default function TransactionPage() {
                 color: "var(--text-primary)",
               }}
             >
-              {search.trim() ? filteredTransactions.length : (data?.pages[0]?.totalCount ?? 0)}
+              {search.trim()
+                ? filteredTransactions.length
+                : (data?.data?.length ?? 0)}
             </span>
             <button
               onClick={() => setShowAddModal(true)}
@@ -282,43 +211,12 @@ export default function TransactionPage() {
                 cursor: "pointer",
               }}
             >
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                <path
-                  d="M6 2V10M2 6H10"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-              </svg>
+              <LuPlus size={12} />
               Tambah
             </button>
           </div>
         </div>
         <TransactionList transactions={filteredTransactions} />
-        
-        {/* Infinite scroll sentinel */}
-        <div ref={loadMoreRef} className="py-3 flex justify-center">
-          {isFetchingNextPage && (
-            <div className="flex items-center gap-2">
-              <div
-                className="w-3 h-3 rounded-full"
-                style={{
-                  border: "2px solid var(--text-disabled)",
-                  borderTopColor: "transparent",
-                  animation: "spin 0.6s linear infinite",
-                }}
-              />
-              <span className="text-[11px]" style={{ color: "var(--text-disabled)" }}>
-                Memuat...
-              </span>
-            </div>
-          )}
-          {!hasNextPage && transactions.length > PAGE_LIMIT && (
-            <p className="text-[11px]" style={{ color: "var(--text-disabled)" }}>
-              Semua transaksi sudah ditampilkan
-            </p>
-          )}
-        </div>
       </div>
 
       {/* Add Transaction Modal */}
