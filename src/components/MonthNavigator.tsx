@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import dayjs from "dayjs";
+import { LuChevronLeft, LuChevronRight } from "react-icons/lu";
 
 interface MonthNavigatorProps {
   value: dayjs.Dayjs;
@@ -95,15 +96,7 @@ export function MonthNavigator({
           cursor: "pointer",
         }}
       >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-          <path
-            d="M15 18L9 12L15 6"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
+        <LuChevronLeft size={16} />
       </button>
 
       {/* Month label — click to open picker */}
@@ -152,15 +145,7 @@ export function MonthNavigator({
           opacity: isNextDisabled ? 0.3 : 1,
         }}
       >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-          <path
-            d="M9 18L15 12L9 6"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
+        <LuChevronRight size={16} />
       </button>
 
       {/* Month picker panel */}
@@ -188,7 +173,7 @@ export function MonthNavigator({
                 cursor: "pointer",
               }}
             >
-              ‹
+              <LuChevronLeft size={14} />
             </button>
             <span
               className="text-[13px] font-semibold"
@@ -208,7 +193,7 @@ export function MonthNavigator({
                 opacity: isNextYearDisabled ? 0.3 : 1,
               }}
             >
-              ›
+              <LuChevronRight size={14} />
             </button>
           </div>
 

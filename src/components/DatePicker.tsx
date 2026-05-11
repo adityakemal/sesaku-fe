@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
+import { LuChevronDown, LuX } from "react-icons/lu";
 import dayjs from "dayjs";
 
 interface MonthPickerProps {
@@ -71,24 +73,13 @@ export function MonthPicker({ selectedDate, onChange }: MonthPickerProps) {
         }}
       >
         <span>{displayText}</span>
-        <svg
-          width="10"
-          height="10"
-          viewBox="0 0 10 10"
-          fill="none"
+        <LuChevronDown
+          size={14}
           style={{
             transform: open ? "rotate(180deg)" : "rotate(0)",
             transition: "transform 0.2s",
           }}
-        >
-          <path
-            d="M1.5 3.5L5 7L8.5 3.5"
-            stroke="currentColor"
-            strokeWidth="1.2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
+        />
       </button>
 
       {open && (
@@ -302,25 +293,14 @@ export function DayPicker({
         <span className="truncate text-[13px]">
           {selectedDay.format("DD MMM YYYY")}
         </span>
-        <svg
-          width="10"
-          height="10"
-          viewBox="0 0 10 10"
-          fill="none"
+        <LuChevronDown
+          size={14}
           style={{
             flexShrink: 0,
             transform: open ? "rotate(180deg)" : "rotate(0)",
             transition: "transform 0.2s",
           }}
-        >
-          <path
-            d="M1.5 3.5L5 7L8.5 3.5"
-            stroke="currentColor"
-            strokeWidth="1.2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
+        />
       </button>
 
       {open && (
@@ -670,51 +650,31 @@ export function DateRangePicker({
             className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-white/10 flex-shrink-0"
             style={{ color: "var(--text-disabled)", cursor: "pointer" }}
           >
-            ×
+            <LuX size={14} />
           </span>
         ) : (
-          <svg
-            width="10"
-            height="10"
-            viewBox="0 0 10 10"
-            fill="none"
-            style={{ flexShrink: 0 }}
-          >
-            <path
-              d="M1.5 3.5L5 7L8.5 3.5"
-              stroke="currentColor"
-              strokeWidth="1.2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
+          <LuChevronDown size={14} style={{ flexShrink: 0 }} />
         )}
       </button>
 
-      {open && (
+      {open && typeof document !== 'undefined' && createPortal(
         <div
-          className="fixed inset-0 z-1150  flex justify-center items-center h-dvh p-4 "
+          className="fixed inset-0 z-[1150] flex justify-center items-end md:items-center p-0 md:p-4"
           style={{ background: "rgba(0,0,0,0.6)" }}
-          // onClick={(e) => {
-          //   if (e.target === e.currentTarget) {
-          //     setOpen(false);
-          //     setSelecting("start");
-          //     setPendingStart(null);
-          //   }
-          // }}
         >
           <div
-            className="w-full max-w-[98%] md:max-w-md max-h-[80vh]  z-150 overflow-y-auto rounded-xl mb-16"
+            className="w-full md:max-w-[600px] flex flex-col rounded-t-2xl md:rounded-xl shadow-2xl animate-in slide-in-from-bottom-4 md:slide-in-from-bottom-0 md:fade-in duration-200"
             style={{
               background: "var(--surface)",
               border: "1px solid var(--border-visible)",
+              maxHeight: "85dvh",
             }}
           >
+            {/* Header - Fixed at Top */}
             <div
-              className="flex items-center justify-between px-4 py-3 sticky top-0 z-10"
+              className="flex items-center justify-between px-4 py-3 shrink-0"
               style={{
                 borderBottom: "1px solid var(--border)",
-                background: "var(--surface)",
               }}
             >
               <button
@@ -750,54 +710,75 @@ export function DateRangePicker({
               </button>
             </div>
 
-            <div className="p-4 flex flex-col gap-4">
+            {/* Body - Scrollable */}
+            <div className="p-4 flex flex-col md:flex-row gap-6 overflow-y-auto flex-1">
               {renderMonth(viewMonth1)}
               {renderMonth(viewMonth2)}
             </div>
 
-            <div className="flex items-center gap-2 px-4 pb-4">
-              <button
-                onClick={() => {
-                  setOpen(false);
-                  setSelecting("start");
-                  setPendingStart(null);
-                }}
-                className="h-10 px-4 text-[13px] font-medium rounded-lg"
-                style={{
-                  border: "1px solid var(--border-visible)",
-                  color: "var(--text-secondary)",
-                  background: "transparent",
-                  cursor: "pointer",
-                }}
-              >
-                Tutup
-              </button>
-              <button
-                onClick={handleThisMonth}
-                className="flex-1 h-10 text-[13px] font-bold rounded-lg"
-                style={{
-                  background: "var(--accent)",
-                  color: "white",
-                  border: "none",
-                  cursor: "pointer",
-                }}
-              >
-                Bulan Ini
-              </button>
-            </div>
-
-            {selecting === "end" && (
-              <div className="px-4 pb-3">
-                <p
-                  className="text-[12px] text-center"
-                  style={{ color: "var(--text-disabled)" }}
+            {/* Footer - Fixed at Bottom */}
+            <div 
+              className="flex flex-col shrink-0"
+              style={{ borderTop: "1px solid var(--border)", background: "var(--surface)" }}
+            >
+              {/* Dynamic Status Indicator */}
+              <div className="pt-3 px-4 flex justify-center">
+                <div 
+                  className="px-3 py-1.5 rounded-full text-[12px] font-medium flex items-center gap-2"
+                  style={{ background: "rgba(91,155,246,0.1)", color: "var(--accent)" }}
                 >
-                  Pilih tanggal akhir
-                </p>
+                  {selecting === "end" && pendingStart ? (
+                    <>
+                      <span>{pendingStart.format("DD MMM YYYY")}</span>
+                      <span>→</span>
+                      <span className="animate-pulse">Pilih akhir...</span>
+                    </>
+                  ) : range ? (
+                    <>
+                      <span>{dayjs(range.start).format("DD MMM YYYY")}</span>
+                      <span>—</span>
+                      <span>{dayjs(range.end).format("DD MMM YYYY")}</span>
+                    </>
+                  ) : (
+                    "Pilih rentang tanggal"
+                  )}
+                </div>
               </div>
-            )}
+
+              <div className="flex items-center gap-2 px-4 py-3">
+                <button
+                  onClick={() => {
+                    setOpen(false);
+                    setSelecting("start");
+                    setPendingStart(null);
+                  }}
+                  className="h-10 px-4 text-[13px] font-medium rounded-lg"
+                  style={{
+                    border: "1px solid var(--border-visible)",
+                    color: "var(--text-secondary)",
+                    background: "transparent",
+                    cursor: "pointer",
+                  }}
+                >
+                  Tutup
+                </button>
+                <button
+                  onClick={handleThisMonth}
+                  className="flex-1 h-10 text-[13px] font-bold rounded-lg"
+                  style={{
+                    background: "var(--accent)",
+                    color: "white",
+                    border: "none",
+                    cursor: "pointer",
+                  }}
+                >
+                  Bulan Ini
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

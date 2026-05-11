@@ -2,6 +2,12 @@ import React, { useState } from "react";
 import dayjs from "dayjs";
 import toast from "react-hot-toast";
 import type { Transaction } from "@/types";
+import { 
+  LuChevronsUpDown, 
+  LuChevronUp, 
+  LuChevronDown, 
+  LuEllipsisVertical 
+} from "react-icons/lu";
 import { formatCurrency } from "@/utils";
 import { useIncomeStore } from "@/store/income";
 import { TransactionFormModal } from "./TransactionFormModal";
@@ -71,29 +77,10 @@ export function TransactionList({ transactions }: TransactionListProps) {
 
   const SortIcon = ({ field }: { field: SortField }) => {
     if (sortField !== field)
-      return (
-        <svg
-          width="10"
-          height="10"
-          viewBox="0 0 10 14"
-          fill="none"
-          className="opacity-30"
-        >
-          <path d="M5 0L8 4H2L5 0Z" fill="currentColor" />
-          <path d="M5 14L2 10H8L5 14Z" fill="currentColor" />
-        </svg>
-      );
+      return <LuChevronsUpDown size={12} className="opacity-30" />;
     if (sortOrder === "asc")
-      return (
-        <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-          <path d="M5 0L8 5H2L5 0Z" fill="currentColor" />
-        </svg>
-      );
-    return (
-      <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-        <path d="M5 10L2 5H8L5 10Z" fill="currentColor" />
-      </svg>
-    );
+      return <LuChevronUp size={12} />;
+    return <LuChevronDown size={12} />;
   };
 
   return (
@@ -206,26 +193,15 @@ export function TransactionList({ transactions }: TransactionListProps) {
                             cursor: "pointer",
                           }}
                         >
-                          <svg
-                            width="10"
-                            height="10"
-                            viewBox="0 0 10 10"
-                            fill="none"
+                          <LuChevronDown
+                            size={14}
                             style={{
                               transform: expandedRows.has(t.id)
                                 ? "rotate(180deg)"
                                 : "rotate(0)",
                               transition: "transform 0.2s",
                             }}
-                          >
-                            <path
-                              d="M1.5 3.5L5 7L8.5 3.5"
-                              stroke="currentColor"
-                              strokeWidth="1.5"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            />
-                          </svg>
+                          />
                         </button>
                       )}
                       <div>
@@ -298,16 +274,7 @@ export function TransactionList({ transactions }: TransactionListProps) {
                           cursor: "pointer",
                         }}
                       >
-                        <svg
-                          width="16"
-                          height="16"
-                          viewBox="0 0 16 16"
-                          fill="currentColor"
-                        >
-                          <circle cx="8" cy="4" r="1.5" />
-                          <circle cx="8" cy="8" r="1.5" />
-                          <circle cx="8" cy="12" r="1.5" />
-                        </svg>
+                        <LuEllipsisVertical size={16} />
                       </button>
                     </div>
                     {actionMenuOpen === t.id && (
@@ -392,12 +359,12 @@ export function TransactionList({ transactions }: TransactionListProps) {
                               className="font-semibold mb-1"
                               style={{ color: "var(--warning)" }}
                             >
-                              Pajak
+                              Biaya Tambahan
                             </p>
                             {t.details.tax.map((tx, i) => (
                               <div
                                 key={i}
-                                className="flex justify-between py-0.5"
+                                className="flex justify-between py-0.5 max-w-xs md:max-w-full"
                                 style={{
                                   borderBottom: "1px solid var(--border)",
                                 }}
@@ -431,7 +398,7 @@ export function TransactionList({ transactions }: TransactionListProps) {
                               {t.details.discount.map((d, i) => (
                                 <div
                                   key={i}
-                                  className="flex justify-between py-0.5"
+                                  className="flex justify-between py-0.5 max-w-xs md:max-w-full"
                                   style={{
                                     borderBottom: "1px solid var(--border)",
                                   }}

@@ -10,8 +10,10 @@ export interface TransactionsPage {
   nextCursor: string | null;
 }
 
-export const getTransactions = (params?: { cursor?: string; limit?: number; start?: string; end?: string }) => {
+export const getTransactions = (params?: { cursor?: string; limit?: number; start?: string; end?: string; all?: string; search?: string }) => {
   const q = new URLSearchParams();
+  if (params?.all) q.append("all", params.all);
+  if (params?.search) q.append("search", params.search);
   if (params?.cursor) q.append("cursor", params.cursor);
   if (params?.limit) q.append("limit", String(params.limit));
   if (params?.start) q.append("start", params.start);

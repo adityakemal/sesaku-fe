@@ -1,12 +1,16 @@
 import { useRef, useState } from "react";
 import Papa from "papaparse";
 import dayjs from "dayjs";
+import toast from "react-hot-toast";
+import { useQueryClient, useMutation } from "@tanstack/react-query";
+import { LuChevronDown, LuScan } from "react-icons/lu";
 import { useIncomeStore } from "@/store/income";
 import { useStorageStore } from "@/store/storage";
 import type { Transaction } from "@/types";
 import type { DateRange } from "@/components/DatePicker";
 import { TransactionFormModal } from "./transactions/TransactionFormModal";
 import { scanReceipt } from "@/api/ocrApi";
+import { getTransactions } from "@/api/transactionApi";
 
 interface DataActionsProps {
   dateRange?: DateRange;
@@ -56,63 +60,69 @@ export function DataActions({ dateRange }: DataActionsProps) {
     downloadCSV(template, "template_transaksi.csv");
   };
 
-  const handleExport = () => {
-    let data = transactions;
-    if (dateRange) {
-      const start = dayjs(dateRange.start).startOf("day").toDate();
-      const end = dayjs(dateRange.end).endOf("day").toDate();
-      data = transactions.filter((t) => {
-        const d = new Date(t.date);
-        return d >= start && d <= end;
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      const res = await getTransactions({
+        all: "true",
+        ...(dateRange && {
+          start: dayjs(dateRange.start).startOf("day").toISOString(),
+          end: dayjs(dateRange.end).endOf("day").toISOString(),
+        }),
       });
-    }
+      const allTx = res.data.data ?? [];
 
-    const csv = data.map((t) => {
-      const base = {
-        name: t.name,
-        nominal: t.nominal,
-        kategori: t.kategori,
-        keterangan: t.keterangan || "",
-        date: t.date,
-        source: t.source || "Web",
-      };
-      if (t.details?.items?.length) {
-        return {
-          ...base,
-          items: t.details.items
-            .map((i) => `${i.name}: ${i.price}`)
-            .join(" | "),
-          tax:
-            t.details.tax
-              ?.map(
-                (tx) =>
-                  `${tx.name}: ${tx.type === "percent" ? tx.value + "%" : tx.value}`,
-              )
-              .join(" | ") || "",
-          discount:
-            t.details.discount
-              ?.map(
-                (d) =>
-                  `${d.name}: ${d.type === "percent" ? d.value + "%" : d.value}`,
-              )
-              .join(" | ") || "",
+      const csv = allTx.map((t) => {
+        const base = {
+          name: t.name,
+          nominal: t.nominal,
+          kategori: t.kategori,
+          keterangan: t.keterangan || "",
+          date: t.date,
+          source: t.source || "Web",
         };
-      }
-      return { ...base, items: "", tax: "", discount: "" };
-    });
+        const details =
+          typeof t.details === "string" ? JSON.parse(t.details) : t.details;
+        if (details?.items?.length) {
+          return {
+            ...base,
+            items: details.items
+              .map((i: any) => `${i.name}: ${i.price}`)
+              .join(" | "),
+            tax:
+              details.tax
+                ?.map(
+                  (tx: any) =>
+                    `${tx.name}: ${tx.type === "percent" ? tx.value + "%" : tx.value}`,
+                )
+                .join(" | ") || "",
+            discount:
+              details.discount
+                ?.map(
+                  (d: any) =>
+                    `${d.name}: ${d.type === "percent" ? d.value + "%" : d.value}`,
+                )
+                .join(" | ") || "",
+          };
+        }
+        return { ...base, items: "", tax: "", discount: "" };
+      });
 
-    const username =
-      user?.name?.replace(/\s+/g, "_").toLowerCase() ||
-      user?.email?.split("@")[0] ||
-      "user";
-    const startStr = dateRange
-      ? dayjs(dateRange.start).format("DD-MM-YYYY")
-      : "";
-    const endStr = dateRange ? dayjs(dateRange.end).format("DD-MM-YYYY") : "";
-    const dateStr = dateRange ? `${startStr}_${endStr}` : "all";
-    const filename = `sesaku-data-${username}-${dateStr}.csv`;
-
-    downloadCSV(csv, filename);
+      const username =
+        user?.name?.replace(/\s+/g, "_").toLowerCase() ||
+        user?.email?.split("@")[0] ||
+        "user";
+      const dateStr = dateRange
+        ? `${dayjs(dateRange.start).format("DD-MM-YYYY")}_${dayjs(dateRange.end).format("DD-MM-YYYY")}`
+        : "all";
+      downloadCSV(csv, `sesaku-data-${username}-${dateStr}.csv`);
+    } catch (err) {
+      console.error("Export failed:", err);
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const handleImportClick = () => {
@@ -342,13 +352,13 @@ export function DataActions({ dateRange }: DataActionsProps) {
         name:
           result.supplier && result.supplier !== "Unknown"
             ? `Transaksi ${result.supplier}`
-            : result.totalData?.name || "OCR Transaction",
+            : result?.name || "OCR Transaction",
         nominal:
           result.total_amount > 0
             ? result.total_amount
             : result.totalData?.price || 0,
         kategori: result.purchase_category || "Lainnya",
-        keterangan: "Hasil Scan Struk",
+        keterangan: result?.keterangan || "Hasil Scan Struk",
         date:
           result.date && dayjs(result.date).isValid()
             ? dayjs(result.date).format("YYYY-MM-DD")
@@ -388,24 +398,13 @@ export function DataActions({ dateRange }: DataActionsProps) {
           >
             Manajemen Data
           </p>
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
+          <LuChevronDown
+            size={16}
             style={{
               transform: isCollapsed ? "rotate(0deg)" : "rotate(180deg)",
               transition: "transform 0.2s",
             }}
-          >
-            <path
-              d="M6 9L12 15L18 9"
-              stroke="var(--text-secondary)"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
+          />
         </button>
 
         {!isCollapsed && (
@@ -423,14 +422,18 @@ export function DataActions({ dateRange }: DataActionsProps) {
             </button>
             <button
               onClick={handleExport}
+              disabled={isExporting}
               className="w-full h-11 text-[13px] font-medium rounded-lg"
               style={{
                 border: "1px solid var(--border-visible)",
-                color: "var(--text-secondary)",
+                color: isExporting
+                  ? "var(--text-disabled)"
+                  : "var(--text-secondary)",
                 background: "transparent",
+                cursor: isExporting ? "not-allowed" : "pointer",
               }}
             >
-              Unduh Data
+              {isExporting ? "Mengunduh..." : "Unduh Data"}
             </button>
             <button
               onClick={handleImportClick}
@@ -487,44 +490,7 @@ export function DataActions({ dateRange }: DataActionsProps) {
           opacity: isScanning ? 0.7 : 1,
         }}
       >
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-          <path
-            d="M4 8V6C4 5.46957 4.21071 4.96086 4.58579 4.58579C4.96086 4.21071 5.46957 4 6 4H8"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M4 16V18C4 18.5304 4.21071 19.0391 4.58579 19.4142C4.96086 19.7893 5.46957 20 6 20H8"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M16 4H18C18.5304 4 19.0391 4.21071 19.4142 4.58579C19.7893 4.96086 20 5.46957 20 6V8"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M16 20H18C18.5304 20 19.0391 19.7893 19.4142 19.4142C19.7893 19.0391 20 18.5304 20 18V16"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2" />
-          <path
-            d="M12 10L14 8"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
+        <LuScan size={24} />
       </button>
 
       <TransactionFormModal

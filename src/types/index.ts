@@ -3,13 +3,13 @@ export type TransactionSource = "Web" | "AI";
 export interface TaxItem {
   name: string;
   value: number;
-  type: "percent" | "fixed";
+  type: "fixed" | "percent";
 }
 
 export interface DiscountItem {
   name: string;
   value: number;
-  type: "percent" | "fixed";
+  type: "fixed" | "percent";
 }
 
 export interface TransactionItem {

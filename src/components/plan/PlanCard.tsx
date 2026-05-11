@@ -6,6 +6,9 @@
  * - Delete action for non-past plans only
  */
 import { useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { getTransactions } from "@/api/transactionApi";
+import { LuChevronDown } from "react-icons/lu";
 import dayjs from "dayjs";
 import { formatCurrency } from "@/utils";
 import type { Plan as PlanType, PlanItem, Transaction } from "@/types";
@@ -300,25 +303,15 @@ export function PlanCard({
           </p>
         </div>
 
-        <svg
-          width="14"
-          height="14"
-          viewBox="0 0 14 14"
-          fill="none"
+        <LuChevronDown
+          size={16}
+          color="var(--text-secondary)"
           style={{
             flexShrink: 0,
             transform: expanded ? "rotate(180deg)" : "rotate(0deg)",
             transition: "transform 0.2s",
           }}
-        >
-          <path
-            d="M2 5L7 10L12 5"
-            stroke="var(--text-secondary)"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
+        />
       </button>
 
       {/* ── Expanded content ── */}

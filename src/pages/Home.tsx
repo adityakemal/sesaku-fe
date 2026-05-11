@@ -8,6 +8,7 @@ import {
   PlanComparisonChart,
 } from "@/components/charts/Charts";
 import { BottomNav } from "@/components/layout/BottomNav";
+import { LuCircleAlert } from "react-icons/lu";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { useTheme } from "@/hooks/useTheme";
@@ -52,7 +53,7 @@ export default function Home() {
     staleTime: 60_000,
   });
 
-  // Smart active plan: current > upcoming > most recent
+  // Active plan: strict match based on today's date
   const activePlan = useMemo(() => {
     if (!plansData || plansData.length === 0) return null;
     const today = dayjs();
@@ -61,14 +62,7 @@ export default function Home() {
         !dayjs(p.start_date).isAfter(today, "day") &&
         !dayjs(p.end_date).isBefore(today, "day"),
     );
-    if (current) return current;
-    const upcoming = plansData
-      .filter((p) => dayjs(p.start_date).isAfter(today))
-      .sort((a, b) => a.start_date.localeCompare(b.start_date))[0];
-    return (
-      upcoming ??
-      plansData.sort((a, b) => b.end_date.localeCompare(a.end_date))[0]
-    );
+    return current || null;
   }, [plansData]);
 
   // ── Fetch plan summary from BE (spending vs plan per category) ──────────
@@ -288,21 +282,7 @@ export default function Home() {
                   border: "1px solid rgba(212,168,67,0.3)",
                 }}
               >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="var(--warning)"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="mt-0.5 shrink-0"
-                >
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <line x1="12" y1="8" x2="12" y2="12"></line>
-                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                </svg>
+                <LuCircleAlert size={16} color="var(--warning)" className="mt-0.5 shrink-0" />
                 <div>
                   <p
                     className="text-[12px] font-semibold mb-0.5"

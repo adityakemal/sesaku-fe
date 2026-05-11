@@ -5,6 +5,8 @@ import toast from "react-hot-toast";
 import { useIncomeStore } from "@/store/income";
 import { DayPicker } from "../DatePicker";
 import { useStorageStore } from "@/store/storage";
+import { useQueryClient, useMutation } from "@tanstack/react-query";
+import { LuPlus } from "react-icons/lu";
 import { createCategory, getCategories } from "@/api/categoryApi";
 import { ErrorModal } from "@/components/ErrorModal";
 import { CategorySelect } from "@/components/CategorySelect";
@@ -184,7 +186,9 @@ export function TransactionFormModal({
           .second(dayjs(editData!.date).second())
       : selectedDate.hour(now.hour()).minute(now.minute()).second(now.second());
 
-    const filteredItems = items.filter((i) => (i.price || 0) > 0 && i.name.trim());
+    const filteredItems = items.filter(
+      (i) => (i.price || 0) > 0 && i.name.trim(),
+    );
     const filteredTaxes = taxes.filter((t) => (t.value || 0) > 0);
     const filteredDiscounts = discounts.filter((d) => (d.value || 0) > 0);
 
@@ -305,14 +309,7 @@ export function TransactionFormModal({
                   background: "transparent",
                 }}
               >
-                <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
-                  <path
-                    d="M6 2V10M2 6H10"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  />
-                </svg>{" "}
+                <LuPlus size={12} />{" "}
                 Tambah Item
               </button>
               {items.map((item, i) => (
@@ -520,6 +517,105 @@ export function TransactionFormModal({
               />
             </div>
 
+            {/* biaya tambahan section */}
+            <div
+              className="space-y-3 p-3 rounded-lg"
+              style={{
+                border: "1px solid var(--warning)",
+                background: "rgba(234,179,8,0.08)",
+              }}
+            >
+              <button
+                onClick={() =>
+                  setTaxes([...taxes, { name: "", value: 0, type: "percent" }])
+                }
+                className="w-full h-8 text-[12px] font-medium rounded-lg flex items-center justify-center gap-1"
+                style={{
+                  border: "1px dashed var(--warning)",
+                  color: "var(--warning)",
+                  background: "transparent",
+                }}
+              >
+                <LuPlus size={12} />{" "}
+                Biaya tambahan (Pajak, Ongkir, dll)
+              </button>
+              {taxes.map((tax, i) => (
+                <div key={`t-${i}`} className="flex gap-2 items-center">
+                  <input
+                    type="text"
+                    placeholder="Pajak, Ongkir, dll"
+                    value={tax.name}
+                    onChange={(e) => {
+                      const next = [...taxes];
+                      next[i] = { ...next[i], name: e.target.value };
+                      setTaxes(next);
+                    }}
+                    className="flex-1 h-9 px-2 text-[13px] rounded-lg"
+                    style={{
+                      border: "1px solid var(--border-visible)",
+                      background: "var(--black)",
+                      color: "var(--text-primary)",
+                      outline: "none",
+                    }}
+                  />
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="Nilai"
+                    value={tax.value || ""}
+                    onChange={(e) => {
+                      const v =
+                        parseInt(e.target.value.replace(/[^0-9]/g, ""), 10) ||
+                        0;
+                      const next = [...taxes];
+                      next[i] = { ...next[i], value: v };
+                      setTaxes(next);
+                    }}
+                    className="max-w-[20%] h-9 px-2 text-[13px] font-bold text-right rounded-lg"
+                    style={{
+                      border: "1px solid var(--border-visible)",
+                      background: "var(--black)",
+                      color: "var(--text-primary)",
+                      outline: "none",
+                    }}
+                  />
+                  <select
+                    value={tax.type}
+                    onChange={(e) => {
+                      const next = [...taxes];
+                      next[i] = {
+                        ...next[i],
+                        type: e.target.value as "fixed" | "percent",
+                      };
+                      setTaxes(next);
+                    }}
+                    className="max-w-[20%] h-9 px-0 text-center text-[11px] rounded-lg"
+                    style={{
+                      border: "1px solid var(--border-visible)",
+                      background: "var(--black)",
+                      color: "var(--text-primary)",
+                      outline: "none",
+                      padding: 0,
+                    }}
+                  >
+                    <option value="fixed">Rp</option>
+                    <option value="percent">%</option>
+                  </select>
+                  <button
+                    onClick={() => setTaxes(taxes.filter((_, j) => j !== i))}
+                    className="w-7 h-7 flex items-center justify-center rounded text-red-500"
+                    style={{
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                    }}
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+
             <div
               className="space-y-3 p-3 rounded-lg"
               style={{
@@ -541,14 +637,7 @@ export function TransactionFormModal({
                   background: "transparent",
                 }}
               >
-                <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
-                  <path
-                    d="M6 2V10M2 6H10"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  />
-                </svg>{" "}
+                <LuPlus size={12} />{" "}
                 Tambah Diskon
               </button>
               {discounts.map((disc, i) => (
@@ -617,111 +706,6 @@ export function TransactionFormModal({
                     onClick={() =>
                       setDiscounts(discounts.filter((_, j) => j !== i))
                     }
-                    className="w-7 h-7 flex items-center justify-center rounded text-red-500"
-                    style={{
-                      background: "none",
-                      border: "none",
-                      cursor: "pointer",
-                    }}
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
-            </div>
-
-            <div
-              className="space-y-3 p-3 rounded-lg"
-              style={{
-                border: "1px solid var(--warning)",
-                background: "rgba(234,179,8,0.08)",
-              }}
-            >
-              <button
-                onClick={() =>
-                  setTaxes([...taxes, { name: "", value: 0, type: "percent" }])
-                }
-                className="w-full h-8 text-[12px] font-medium rounded-lg flex items-center justify-center gap-1"
-                style={{
-                  border: "1px dashed var(--warning)",
-                  color: "var(--warning)",
-                  background: "transparent",
-                }}
-              >
-                <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
-                  <path
-                    d="M6 2V10M2 6H10"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  />
-                </svg>{" "}
-                Tambah Pajak
-              </button>
-              {taxes.map((tax, i) => (
-                <div key={`t-${i}`} className="flex gap-2 items-center">
-                  <input
-                    type="text"
-                    placeholder="Nama pajak"
-                    value={tax.name}
-                    onChange={(e) => {
-                      const next = [...taxes];
-                      next[i] = { ...next[i], name: e.target.value };
-                      setTaxes(next);
-                    }}
-                    className="flex-1 h-9 px-2 text-[13px] rounded-lg"
-                    style={{
-                      border: "1px solid var(--border-visible)",
-                      background: "var(--black)",
-                      color: "var(--text-primary)",
-                      outline: "none",
-                    }}
-                  />
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    placeholder="Nilai"
-                    value={tax.value || ""}
-                    onChange={(e) => {
-                      const v =
-                        parseInt(e.target.value.replace(/[^0-9]/g, ""), 10) ||
-                        0;
-                      const next = [...taxes];
-                      next[i] = { ...next[i], value: v };
-                      setTaxes(next);
-                    }}
-                    className="max-w-[20%] h-9 px-2 text-[13px] font-bold text-right rounded-lg"
-                    style={{
-                      border: "1px solid var(--border-visible)",
-                      background: "var(--black)",
-                      color: "var(--text-primary)",
-                      outline: "none",
-                    }}
-                  />
-                  <select
-                    value={tax.type}
-                    onChange={(e) => {
-                      const next = [...taxes];
-                      next[i] = {
-                        ...next[i],
-                        type: e.target.value as "percent" | "fixed",
-                      };
-                      setTaxes(next);
-                    }}
-                    className="max-w-[20%] h-9 px-0 text-center text-[11px] rounded-lg"
-                    style={{
-                      border: "1px solid var(--border-visible)",
-                      background: "var(--black)",
-                      color: "var(--text-primary)",
-                      outline: "none",
-                      padding: 0,
-                    }}
-                  >
-                    <option value="percent">%</option>
-                    <option value="fixed">Rp</option>
-                  </select>
-                  <button
-                    onClick={() => setTaxes(taxes.filter((_, j) => j !== i))}
                     className="w-7 h-7 flex items-center justify-center rounded text-red-500"
                     style={{
                       background: "none",

@@ -7,6 +7,7 @@ import { useStorageStore } from "@/store/storage";
 import { formatCurrency } from "@/utils";
 import { CategorySelect } from "@/components/CategorySelect";
 import { DateRangePicker } from "@/components/DatePicker";
+import { LuCopy } from "react-icons/lu";
 import type { Plan as PlanType, PlanItem } from "@/types";
 
 function formatNumber(value: string | number): string {
@@ -37,7 +38,9 @@ export function PlanFormModal({
   latestEndDate,
 }: PlanFormModalProps) {
   const queryClient = useQueryClient();
-  const allCategories = useStorageStore((s) => s.listCategory).map((c) => c.name);
+  const allCategories = useStorageStore((s) => s.listCategory).map(
+    (c) => c.name,
+  );
 
   const [draft, setDraft] = useState<DraftPlan>({
     startDate: "",
@@ -45,16 +48,23 @@ export function PlanFormModal({
     items: [],
   });
 
-  const minStartForNew = useMemo(() => {
-    const oneMonthAgo = dayjs().subtract(1, "month").startOf("month");
-    if (latestEndDate) {
-      const nextAvailable = dayjs(latestEndDate).add(1, "day");
-      return nextAvailable.isAfter(oneMonthAgo)
-        ? nextAvailable.toDate()
-        : oneMonthAgo.toDate();
-    }
-    return oneMonthAgo.toDate();
-  }, [latestEndDate]);
+  const lastPlan = useMemo(() => {
+    if (allPlans.length === 0) return null;
+    const others = editData
+      ? allPlans.filter((p) => p.id !== editData.id)
+      : allPlans;
+    if (others.length === 0) return null;
+    return [...others].sort((a, b) => b.end_date.localeCompare(a.end_date))[0];
+  }, [allPlans, editData]);
+
+  const handleCopyLastPlan = () => {
+    if (!lastPlan) return;
+    setDraft((prev) => ({
+      ...prev,
+      items: lastPlan.items.map((item) => ({ ...item })),
+    }));
+    toast.success("Berhasil menyalin alokasi plan terakhir");
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -62,7 +72,7 @@ export function PlanFormModal({
       setDraft({
         startDate: dayjs(editData.start_date).format("YYYY-MM-DD"),
         endDate: dayjs(editData.end_date).format("YYYY-MM-DD"),
-        items: editData.items.map(item => ({ ...item })),
+        items: editData.items.map((item) => ({ ...item })),
       });
     } else {
       if (latestEndDate) {
@@ -87,7 +97,11 @@ export function PlanFormModal({
     [draft.items],
   );
 
-  const updateItem = (idx: number, field: keyof PlanItem, value: string | number) =>
+  const updateItem = (
+    idx: number,
+    field: keyof PlanItem,
+    value: string | number,
+  ) =>
     setDraft((prev) => ({
       ...prev,
       items: prev.items.map((item, i) =>
@@ -110,9 +124,12 @@ export function PlanFormModal({
     onSuccess: () => {
       invalidatePlans();
       onClose();
-      toast.success(editData ? "Plan berhasil diperbarui" : "Plan berhasil dibuat");
+      toast.success(
+        editData ? "Plan berhasil diperbarui" : "Plan berhasil dibuat",
+      );
     },
-    onError: () => toast.error(editData ? "Gagal memperbarui plan" : "Gagal menyimpan plan"),
+    onError: () =>
+      toast.error(editData ? "Gagal memperbarui plan" : "Gagal menyimpan plan"),
   });
 
   const handleSave = () => {
@@ -131,14 +148,15 @@ export function PlanFormModal({
 
     const newStart = dayjs(draft.startDate);
     const newEnd = dayjs(draft.endDate);
-    
+
     // Check overlap with other plans, excluding the current plan if editing
-    const overlap = allPlans.some(
-      (p) => {
-        if (editData && p.id === editData.id) return false;
-        return newStart.isBefore(dayjs(p.end_date)) && newEnd.isAfter(dayjs(p.start_date));
-      }
-    );
+    const overlap = allPlans.some((p) => {
+      if (editData && p.id === editData.id) return false;
+      return (
+        newStart.isBefore(dayjs(p.end_date)) &&
+        newEnd.isAfter(dayjs(p.start_date))
+      );
+    });
 
     if (overlap) {
       toast.error("Periode bertabrakan dengan plan yang sudah ada");
@@ -190,37 +208,52 @@ export function PlanFormModal({
           >
             Periode
           </p>
-          <DateRangePicker
-            range={{
-              start: draft.startDate ? dayjs(draft.startDate).toDate() : dayjs().toDate(),
-              end: draft.endDate ? dayjs(draft.endDate).toDate() : dayjs().toDate(),
-            }}
-            onChange={(r) =>
-              setDraft((prev) => ({
-                ...prev,
-                startDate: dayjs(r.start).format("YYYY-MM-DD"),
-                endDate: dayjs(r.end).format("YYYY-MM-DD"),
-              }))
-            }
-            disableFuture={false}
-            minDate={editData ? undefined : minStartForNew}
-            placeholder="Pilih periode plan"
-          />
-          {!editData && latestEndDate && (
-            <p className="text-[11px]" style={{ color: "var(--text-disabled)" }}>
-              Mulai dari {dayjs(latestEndDate).add(1, "day").format("DD MMM YYYY")}
-            </p>
-          )}
+          <div className="flex items-center justify-between">
+            <DateRangePicker
+              range={{
+                start: draft.startDate
+                  ? dayjs(draft.startDate).toDate()
+                  : dayjs().toDate(),
+                end: draft.endDate
+                  ? dayjs(draft.endDate).toDate()
+                  : dayjs().toDate(),
+              }}
+              onChange={(r) =>
+                setDraft((prev) => ({
+                  ...prev,
+                  startDate: dayjs(r.start).format("YYYY-MM-DD"),
+                  endDate: dayjs(r.end).format("YYYY-MM-DD"),
+                }))
+              }
+              disableFuture={false}
+              placeholder="Pilih periode plan"
+            />
+
+            {!editData && lastPlan && (
+              <button
+                onClick={handleCopyLastPlan}
+                className="text-[11px] font-medium flex items-center gap-1 hover:opacity-80 transition-opacity"
+                style={{
+                  color: "var(--warning)",
+                }}
+              >
+                <LuCopy size={12} color="currentColor" />
+                Salin Plan Terakhir
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Category allocation */}
         <div className="space-y-2">
-          <p
-            className="text-[11px] font-medium"
-            style={{ color: "var(--text-secondary)" }}
-          >
-            Alokasi Kategori
-          </p>
+          <div className="flex items-center justify-between">
+            <p
+              className="text-[11px] font-medium"
+              style={{ color: "var(--text-secondary)" }}
+            >
+              Alokasi Kategori
+            </p>
+          </div>
 
           {draft.items.map((item, i) => {
             const usedByOthers = draft.items
@@ -268,7 +301,8 @@ export function PlanFormModal({
                       updateItem(
                         i,
                         "nominal",
-                        parseInt(e.target.value.replace(/[^0-9]/g, ""), 10) || 0,
+                        parseInt(e.target.value.replace(/[^0-9]/g, ""), 10) ||
+                          0,
                       )
                     }
                     className="w-full h-10 pl-7 pr-2 text-[13px] font-bold text-right rounded-lg"

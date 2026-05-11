@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import Fuse from "fuse.js";
 import dayjs from "dayjs";
-import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getTransactions } from "@/api/transactionApi";
 import type { Transaction } from "@/types";
 
@@ -25,6 +25,15 @@ export default function TransactionPage() {
   const queryClient = useQueryClient();
   const [showAddModal, setShowAddModal] = useState(false);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  // Debounce: only trigger server search after user stops typing 300ms
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search.trim()), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  const isSearching = debouncedSearch.length > 0;
   
   const {
     dateRange,
@@ -36,6 +45,7 @@ export default function TransactionPage() {
   const startStr = useMemo(() => dayjs(dateRange.start).startOf("day").toISOString(), [dateRange.start]);
   const endStr = useMemo(() => dayjs(dateRange.end).endOf("day").toISOString(), [dateRange.end]);
 
+  // ── Paginated list (no search) ──────────────────────────────────────────
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } =
     useInfiniteQuery({
       queryKey: ["transactions-paginated", startStr, endStr],
@@ -53,9 +63,21 @@ export default function TransactionPage() {
         return hasMore ? lastPage.nextCursor : undefined;
       },
       initialPageParam: null as string | null,
+      enabled: !isSearching, // pause when search is active
     });
 
-  const transactions: Transaction[] = useMemo(() => {
+  // ── Server search (pg_trgm, all matching rows) ──────────────────────────
+  const { data: searchData, isLoading: isSearchLoading } = useQuery({
+    queryKey: ["transactions-search", debouncedSearch, startStr, endStr],
+    queryFn: async () => {
+      const res = await getTransactions({ search: debouncedSearch, start: startStr, end: endStr });
+      return res.data;
+    },
+    enabled: isSearching,
+  });
+
+  // Fuse.js only runs on loaded paginated data (when not in search mode)
+  const paginatedTx: Transaction[] = useMemo(() => {
     const raw = data?.pages.flatMap((page) => page.data) || [];
     return raw.map((t) => ({
       ...t,
@@ -64,10 +86,23 @@ export default function TransactionPage() {
     }));
   }, [data]);
 
+  const serverSearchTx: Transaction[] = useMemo(() => {
+    const raw = searchData?.data ?? [];
+    return raw.map((t) => ({
+      ...t,
+      nominal: Number(t.nominal) || 0,
+      details: typeof t.details === "string" ? JSON.parse(t.details) : t.details,
+    }));
+  }, [searchData]);
+
+  // Active transactions shown in list
+  const transactions = isSearching ? serverSearchTx : paginatedTx;
+
+  // Fuse.js: only for instant local highlight when not in server-search mode
   const fuse = useMemo(
     () =>
       new Fuse(
-        transactions.map((t) => ({
+        paginatedTx.map((t) => ({
           ...t,
           _items: t.details?.items?.map((i) => i.name).join(" ") || "",
         })),
@@ -78,13 +113,15 @@ export default function TransactionPage() {
           ignoreLocation: true,
         },
       ),
-    [transactions],
+    [paginatedTx],
   );
 
+  // filteredTransactions: server results (isSearching) or local Fuse (typing but < debounce)
   const filteredTransactions = useMemo(() => {
-    if (!search.trim()) return transactions;
-    return fuse.search(search.trim()).map((r) => r.item);
-  }, [search, fuse, transactions]);
+    if (isSearching) return serverSearchTx;
+    if (search.trim()) return fuse.search(search.trim()).map((r) => r.item);
+    return paginatedTx;
+  }, [isSearching, search, serverSearchTx, fuse, paginatedTx]);
 
   // Total spent from the server (for the entire range)
   const totalAmount = data?.pages[0]?.totalAmount ?? 0;

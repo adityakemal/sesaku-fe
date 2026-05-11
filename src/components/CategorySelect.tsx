@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useMemo } from "react";
 import { useStorageStore } from "@/store/storage";
 import { createCategory, getCategories } from "@/api/categoryApi";
 import { ErrorModal } from "@/components/ErrorModal";
+import { LuChevronDown, LuCheck } from "react-icons/lu";
 
 interface CategorySelectProps {
   value: string;
@@ -83,25 +84,14 @@ export function CategorySelect({ value, onChange, disabledCategories = [] }: Cat
           }}
         >
           <span className="truncate">{value}</span>
-          <svg
-            width="12"
-            height="12"
-            viewBox="0 0 12 12"
-            fill="none"
+          <LuChevronDown
+            size={16}
             style={{
               flexShrink: 0,
               transform: dropdownOpen ? "rotate(180deg)" : "rotate(0deg)",
               transition: "transform 0.2s",
             }}
-          >
-            <path
-              d="M2 4L6 8L10 4"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
+          />
         </button>
         {dropdownOpen && (
           <div
@@ -134,9 +124,7 @@ export function CategorySelect({ value, onChange, disabledCategories = [] }: Cat
                     }}
                   >
                     {value === k && (
-                      <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style={{ flexShrink: 0 }}>
-                        <path d="M1 5.5L3.5 8L9 2" stroke="var(--accent)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
+                      <LuCheck size={14} color="var(--accent)" style={{ flexShrink: 0 }} />
                     )}
                     <span className="truncate">{k}</span>
                     {isDisabled && (

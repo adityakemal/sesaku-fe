@@ -10,6 +10,7 @@ import {
   type DateRange,
 } from "@/components/DatePicker";
 import { useIncomeStore } from "@/store/income";
+import { LuPlus, LuEllipsisVertical } from "react-icons/lu";
 import { formatCurrency } from "@/utils";
 import type { IncomeEntry } from "@/types";
 
@@ -41,22 +42,26 @@ export default function IncomePage() {
   const handleDelete = () => {
     if (!deletingEntry) return;
     deleteIncomeEntry(deletingEntry.id);
-    toast.success("Pemasukan dihapus");
+    toast.success("Income dihapus");
     setDeletingEntry(null);
   };
 
   return (
     <PageLayout>
-      <AppHeader title="Pemasukan" isShowDatepicker={false} />
-
-      <div className="flex items-center justify-end">
-        <DateRangePicker
-          range={filterRange}
-          onChange={setFilterRange}
-          placeholder="Semua pemasukan"
-          onClear={() => setFilterRange(null)}
-        />
-      </div>
+      <AppHeader
+        title="Income"
+        isShowDatepicker={false}
+        rightSlot={
+          <div className="flex items-center justify-end">
+            <DateRangePicker
+              range={filterRange}
+              onChange={setFilterRange}
+              placeholder="Semua Income"
+              onClear={() => setFilterRange(null)}
+            />
+          </div>
+        }
+      />
 
       <div
         className="p-4 rounded-xl space-y-4"
@@ -81,14 +86,7 @@ export default function IncomePage() {
               border: "none",
             }}
           >
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-              <path
-                d="M6 2V10M2 6H10"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-              />
-            </svg>
+            <LuPlus size={16} />
             Tambah
           </button>
         </div>
@@ -99,7 +97,7 @@ export default function IncomePage() {
               className="text-[13px]"
               style={{ color: "var(--text-disabled)" }}
             >
-              Belum ada pemasukan di bulan ini.
+              Belum ada income di bulan ini.
             </p>
           </div>
         ) : (
@@ -214,16 +212,7 @@ export default function IncomePage() {
                             cursor: "pointer",
                           }}
                         >
-                          <svg
-                            width="16"
-                            height="16"
-                            viewBox="0 0 16 16"
-                            fill="currentColor"
-                          >
-                            <circle cx="8" cy="4" r="1.5" />
-                            <circle cx="8" cy="8" r="1.5" />
-                            <circle cx="8" cy="12" r="1.5" />
-                          </svg>
+                          <LuEllipsisVertical size={16} />
                         </button>
                       </div>
                       {actionMenuOpen === entry.id && (
@@ -283,7 +272,7 @@ export default function IncomePage() {
               amount: data.amount,
               note: data.note,
             });
-            toast.success("Pemasukan ditambahkan");
+            toast.success("Income ditambahkan");
             setShowAddModal(false);
           }}
           onClose={() => setShowAddModal(false)}
@@ -300,7 +289,7 @@ export default function IncomePage() {
               note: data.note,
               date: data.date,
             } as any);
-            toast.success("Pemasukan diperbarui");
+            toast.success("Income diperbarui");
             setEditingEntry(null);
           }}
           onClose={() => setEditingEntry(null)}
@@ -330,7 +319,7 @@ export default function IncomePage() {
                 className="text-[16px] font-semibold text-center"
                 style={{ color: "var(--text-display)" }}
               >
-                Hapus Pemasukan
+                Hapus Income
               </p>
             </div>
             <div className="p-5 text-center">
@@ -338,7 +327,7 @@ export default function IncomePage() {
                 className="text-[14px]"
                 style={{ color: "var(--text-secondary)" }}
               >
-                Yakin ingin menghapus pemasukan{" "}
+                Yakin ingin menghapus income{" "}
                 <span className="font-bold" style={{ color: "var(--accent)" }}>
                   {formatCurrency(deletingEntry.amount)}
                 </span>
@@ -449,7 +438,7 @@ function IncomeModal({
             className="text-[16px] font-semibold"
             style={{ color: "var(--text-display)" }}
           >
-            {isEdit ? "Edit Pemasukan" : "Tambah Pemasukan"}
+            {isEdit ? "Edit Income" : "Tambah Income"}
           </p>
           <button
             onClick={onClose}

@@ -1,3 +1,5 @@
+import { LuCircleX } from "react-icons/lu";
+
 interface ErrorModalProps {
   message: string;
   onClose: () => void;
@@ -27,11 +29,7 @@ export function ErrorModal({ message, onClose }: ErrorModalProps) {
             className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
             style={{ background: "rgba(215,25,33,0.15)" }}
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10"></circle>
-              <line x1="15" y1="9" x2="9" y2="15"></line>
-              <line x1="9" y1="9" x2="15" y2="15"></line>
-            </svg>
+            <LuCircleX size={18} color="var(--accent)" />
           </div>
           <p
             className="text-[15px] font-semibold"

@@ -16,6 +16,11 @@ export const queryClient = new QueryClient({
   },
 });
 
+// Disable console.log if not localhost
+if (window?.location?.hostname !== "localhost") {
+  console.log = () => {};
+}
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
