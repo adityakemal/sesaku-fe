@@ -235,7 +235,11 @@ export function SpendingTrendChart({ data: days }: SpendingTrendChartProps) {
                   : "1px solid var(--border)",
             }}
           >
-            {mode === "weekly" ? "Per Minggu" : mode === "daily" ? "Per Hari" : "Per Bulan"}
+            {mode === "weekly"
+              ? "Per Minggu"
+              : mode === "daily"
+                ? "Per Hari"
+                : "Per Bulan"}
           </button>
         ))}
       </div>
@@ -248,7 +252,10 @@ export function SpendingTrendChart({ data: days }: SpendingTrendChartProps) {
               scales: {
                 x: {
                   grid: { display: false },
-                  ticks: { color: "rgba(150, 150, 150, 0.8)", font: { size: 10 } },
+                  ticks: {
+                    color: "rgba(150, 150, 150, 0.8)",
+                    font: { size: 10 },
+                  },
                   border: { display: false },
                 },
                 y: {
@@ -285,6 +292,10 @@ interface PlanComparisonChartProps {
 }
 
 export function PlanComparisonChart({ items }: PlanComparisonChartProps) {
+  const [selected, setSelected] = useState<PlanComparisonItem | null>(null);
+
+  const fmt = (v: number) => "Rp " + new Intl.NumberFormat("id-ID").format(v);
+
   const chartData = useMemo(
     () => ({
       labels: items.map((i) => i.category),
@@ -292,7 +303,11 @@ export function PlanComparisonChart({ items }: PlanComparisonChartProps) {
         {
           label: "Plan",
           data: items.map((i) => i.plan),
-          backgroundColor: "rgba(91, 155, 246, 0.8)",
+          backgroundColor: items.map((i) =>
+            selected?.category === i.category
+              ? "rgba(91, 155, 246, 1)"
+              : "rgba(91, 155, 246, 0.55)",
+          ),
           borderRadius: 4,
           barPercentage: 0.8,
           categoryPercentage: 0.8,
@@ -300,14 +315,18 @@ export function PlanComparisonChart({ items }: PlanComparisonChartProps) {
         {
           label: "Realita",
           data: items.map((i) => i.actual),
-          backgroundColor: "rgba(215, 25, 33, 0.8)",
+          backgroundColor: items.map((i) =>
+            selected?.category === i.category
+              ? "rgba(215, 25, 33, 1)"
+              : "rgba(215, 25, 33, 0.55)",
+          ),
           borderRadius: 4,
           barPercentage: 0.8,
           categoryPercentage: 0.8,
         },
       ],
     }),
-    [items],
+    [items, selected],
   );
 
   if (items.length === 0) {
@@ -320,58 +339,176 @@ export function PlanComparisonChart({ items }: PlanComparisonChartProps) {
     );
   }
 
+  const diff = selected ? selected.actual - selected.plan : 0;
+  const isOver = diff > 0;
+
   return (
-    <div style={{ height: 240 }}>
-      <Bar
-        data={chartData}
-        options={{
-          plugins: {
-            legend: {
-              display: true,
-              position: "top",
-              labels: {
-                color:
-                  typeof document !== "undefined"
-                    ? getComputedStyle(document.documentElement)
-                        .getPropertyValue("--text-primary")
-                        .trim() || "rgba(200,200,200,0.9)"
-                    : "rgba(200,200,200,0.9)",
-                font: { size: 11 },
-                usePointStyle: true,
-                boxWidth: 8,
-                padding: 12,
-              },
+    <div className="flex flex-col gap-3">
+      <div style={{ height: 220 }}>
+        <Bar
+          data={chartData}
+          options={{
+            onClick: (_evt, elements) => {
+              if (elements.length === 0) {
+                setSelected(null);
+                return;
+              }
+              const idx = elements[0].index;
+              setSelected(items[idx]);
             },
-            tooltip: {
-              callbacks: {
-                label: (ctx) => {
-                  const val = ctx.parsed.y;
-                  if (val === null || val === undefined) return "";
-                  return `${ctx.dataset.label}: Rp ${new Intl.NumberFormat("id-ID").format(val)}`;
+            plugins: {
+              legend: {
+                display: true,
+                position: "top",
+                labels: {
+                  color:
+                    typeof document !== "undefined"
+                      ? getComputedStyle(document.documentElement)
+                          .getPropertyValue("--text-primary")
+                          .trim() || "rgba(200,200,200,0.9)"
+                      : "rgba(200,200,200,0.9)",
+                  font: { size: 11 },
+                  usePointStyle: true,
+                  boxWidth: 8,
+                  padding: 12,
+                },
+              },
+              tooltip: {
+                mode: "index",
+                intersect: false,
+                callbacks: {
+                  label: (ctx) => {
+                    const val = ctx.parsed.y;
+                    if (val === null || val === undefined) return "";
+                    return `${ctx.dataset.label}: ${fmt(val)}`;
+                  },
                 },
               },
             },
-          },
-          scales: {
-            x: {
-              grid: { display: false },
-              ticks: { color: "rgba(150, 150, 150, 0.8)", font: { size: 10 } },
-              border: { display: false },
-            },
-            y: {
-              grid: { color: "rgba(150, 150, 150, 0.2)" },
-              ticks: {
-                color: "rgba(150, 150, 150, 0.8)",
-                font: { size: 10 },
-                callback: (v) => compact.format(Number(v)),
+            scales: {
+              x: {
+                grid: { display: false },
+                ticks: {
+                  color: "rgba(150, 150, 150, 0.8)",
+                  font: { size: 10 },
+                },
+                border: { display: false },
               },
-              border: { display: false },
+              y: {
+                grid: { color: "rgba(150, 150, 150, 0.2)" },
+                ticks: {
+                  color: "rgba(150, 150, 150, 0.8)",
+                  font: { size: 10 },
+                  callback: (v) => compact.format(Number(v)),
+                },
+                border: { display: false },
+              },
             },
-          },
-          responsive: true,
-          maintainAspectRatio: false,
-        }}
-      />
+            responsive: true,
+            maintainAspectRatio: false,
+          }}
+        />
+      </div>
+
+      {/* Info card — shown after clicking a bar */}
+      {selected ? (
+        <div
+          className="rounded-xl px-4 py-3 flex flex-col gap-2"
+          style={{
+            background: "var(--black)",
+            border: `1px solid ${isOver ? "rgba(215,25,33,0.3)" : "rgba(91,155,246,0.3)"}`,
+          }}
+        >
+          {/* Header row */}
+          <div className="flex items-center justify-between">
+            <p
+              className="text-[13px] font-semibold"
+              style={{ color: "var(--text-display)" }}
+            >
+              {selected.category}
+            </p>
+            <button
+              onClick={() => setSelected(null)}
+              className="text-[16px] leading-none"
+              style={{
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                color: "var(--text-disabled)",
+              }}
+            >
+              ×
+            </button>
+          </div>
+
+          {/* Plan vs Realita row */}
+          <div className="grid grid-cols-2 gap-2">
+            <div
+              className="rounded-lg px-3 py-2"
+              style={{
+                background: "rgba(91,155,246,0.08)",
+                border: "1px solid rgba(91,155,246,0.2)",
+              }}
+            >
+              <p
+                className="text-[10px] font-semibold uppercase tracking-wide mb-0.5"
+                style={{ color: "rgba(91,155,246,0.8)" }}
+              >
+                Plan
+              </p>
+              <p
+                className="text-[13px] font-mono font-bold"
+                style={{ color: "rgba(91,155,246,0.95)" }}
+              >
+                {fmt(selected.plan)}
+              </p>
+            </div>
+            <div
+              className="rounded-lg px-3 py-2"
+              style={{
+                background: "rgba(215,25,33,0.08)",
+                border: "1px solid rgba(215,25,33,0.2)",
+              }}
+            >
+              <p
+                className="text-[10px] font-semibold uppercase tracking-wide mb-0.5"
+                style={{ color: "rgba(215,25,33,0.8)" }}
+              >
+                Realita
+              </p>
+              <p
+                className="text-[13px] font-mono font-bold"
+                style={{ color: "rgba(215,25,33,0.95)" }}
+              >
+                {fmt(selected.actual)}
+              </p>
+            </div>
+          </div>
+
+          {/* Diff badge */}
+          <div className="flex justify-end">
+            <span
+              className="text-[11px] font-semibold px-2 py-0.5 rounded-full"
+              style={{
+                background: isOver
+                  ? "rgba(215,25,33,0.12)"
+                  : "rgba(74,158,92,0.12)",
+                color: isOver ? "var(--accent)" : "var(--success)",
+              }}
+            >
+              {isOver ? "▲ Over " : "▼ Sisa "}
+              {fmt(Math.abs(diff))}
+            </span>
+          </div>
+        </div>
+      ) : (
+        <p
+          className="text-center text-[11px]"
+          style={{ color: "var(--text-disabled)" }}
+        >
+          Ketuk bar untuk detail
+        </p>
+      )}
     </div>
   );
 }

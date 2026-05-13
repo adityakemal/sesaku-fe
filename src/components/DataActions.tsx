@@ -370,7 +370,8 @@ export function DataActions({ dateRange }: DataActionsProps) {
         items:
           result.items?.length > 0
             ? result.items.map((item: any) => ({
-                name: item.name || "",
+                name:
+                  item.qty > 1 ? `${item.qty} ${item.name}` : item.name || "",
                 price: item.price || 0,
               }))
             : undefined,
@@ -504,7 +505,7 @@ export function DataActions({ dateRange }: DataActionsProps) {
       />
 
       {isScanning && (
-        <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-black/70 backdrop-blur-sm">
+        <div className="fixed inset-0 h-screen z-[9999] flex flex-col items-center justify-center bg-black/70 backdrop-blur-sm">
           <div className="w-12 h-12 border-4 border-white/20 border-t-white rounded-full animate-spin mb-4"></div>
           <p className="text-white text-lg font-semibold animate-pulse">
             Memproses Foto...
@@ -520,7 +521,9 @@ export function DataActions({ dateRange }: DataActionsProps) {
         <div
           className="fixed inset-0 z-[200] flex items-center justify-center p-4"
           style={{ background: "rgba(0,0,0,0.65)" }}
-          onClick={(e) => e.target === e.currentTarget && setExportModalOpen(false)}
+          onClick={(e) =>
+            e.target === e.currentTarget && setExportModalOpen(false)
+          }
         >
           <div
             className="w-full max-w-sm rounded-2xl overflow-hidden shadow-2xl"
@@ -536,14 +539,22 @@ export function DataActions({ dateRange }: DataActionsProps) {
             >
               <div className="flex items-center gap-2">
                 <LuDownload size={16} color="var(--accent)" />
-                <p className="text-[15px] font-semibold" style={{ color: "var(--text-display)" }}>
+                <p
+                  className="text-[15px] font-semibold"
+                  style={{ color: "var(--text-display)" }}
+                >
                   Unduh Data CSV
                 </p>
               </div>
               <button
                 onClick={() => setExportModalOpen(false)}
                 className="w-7 h-7 flex items-center justify-center rounded-full"
-                style={{ background: "var(--border)", border: "none", color: "var(--text-secondary)", cursor: "pointer" }}
+                style={{
+                  background: "var(--border)",
+                  border: "none",
+                  color: "var(--text-secondary)",
+                  cursor: "pointer",
+                }}
               >
                 <LuX size={14} />
               </button>
@@ -552,7 +563,10 @@ export function DataActions({ dateRange }: DataActionsProps) {
             {/* Body */}
             <div className="px-5 py-5 flex flex-col gap-4">
               <div>
-                <p className="text-[12px] mb-2 font-medium" style={{ color: "var(--text-secondary)" }}>
+                <p
+                  className="text-[12px] mb-2 font-medium"
+                  style={{ color: "var(--text-secondary)" }}
+                >
                   Pilih rentang tanggal data yang ingin diunduh
                 </p>
                 <DateRangePicker
@@ -565,7 +579,10 @@ export function DataActions({ dateRange }: DataActionsProps) {
               {exportRange && (
                 <div
                   className="flex items-center gap-2 px-3 py-2 rounded-lg text-[12px]"
-                  style={{ background: "rgba(91,155,246,0.1)", color: "var(--accent)" }}
+                  style={{
+                    background: "rgba(91,155,246,0.1)",
+                    color: "var(--accent)",
+                  }}
                 >
                   <LuDownload size={12} />
                   <span>
@@ -614,15 +631,38 @@ export function DataActions({ dateRange }: DataActionsProps) {
       {/* ── Download loading overlay ──────────────────────── */}
       {isExporting && (
         <div className="fixed inset-0 z-[300] flex flex-col items-center justify-center bg-black/70 backdrop-blur-sm">
-          <div className="flex flex-col items-center gap-4 px-8 py-8 rounded-2xl" style={{ background: "var(--surface)", border: "1px solid var(--border-visible)", minWidth: 240 }}>
-            <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: "rgba(91,155,246,0.15)" }}>
+          <div
+            className="flex flex-col items-center gap-4 px-8 py-8 rounded-2xl"
+            style={{
+              background: "var(--surface)",
+              border: "1px solid var(--border-visible)",
+              minWidth: 240,
+            }}
+          >
+            <div
+              className="w-12 h-12 rounded-full flex items-center justify-center"
+              style={{ background: "rgba(91,155,246,0.15)" }}
+            >
               <LuDownload size={22} color="var(--accent)" />
             </div>
             <div className="text-center">
-              <p className="text-[15px] font-semibold" style={{ color: "var(--text-display)" }}>Menyiapkan file...</p>
-              <p className="text-[12px] mt-1" style={{ color: "var(--text-secondary)" }}>Sedang mengambil dan menyusun data transaksi</p>
+              <p
+                className="text-[15px] font-semibold"
+                style={{ color: "var(--text-display)" }}
+              >
+                Menyiapkan file...
+              </p>
+              <p
+                className="text-[12px] mt-1"
+                style={{ color: "var(--text-secondary)" }}
+              >
+                Sedang mengambil dan menyusun data transaksi
+              </p>
             </div>
-            <div className="w-full h-1 rounded-full overflow-hidden" style={{ background: "var(--border)" }}>
+            <div
+              className="w-full h-1 rounded-full overflow-hidden"
+              style={{ background: "var(--border)" }}
+            >
               <div
                 className="h-full rounded-full"
                 style={{
