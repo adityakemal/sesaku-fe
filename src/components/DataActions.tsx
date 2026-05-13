@@ -257,9 +257,19 @@ export function DataActions({ dateRange }: DataActionsProps) {
   };
 
   const compressImage = async (file: File): Promise<File> => {
+    let processFile = file;
+
+    // OCR.space supported types
+    const supportedTypes = ["image/jpeg", "image/png", "image/gif", "image/bmp", "image/tiff", "application/pdf"];
+    
+    // Skip compression if file is already under 500KB AND is a supported type
+    if (processFile.size <= 500 * 1024 && supportedTypes.includes(processFile.type.toLowerCase())) {
+      return processFile;
+    }
+
     return new Promise((resolve) => {
       const reader = new FileReader();
-      reader.readAsDataURL(file);
+      reader.readAsDataURL(processFile);
       reader.onload = (event) => {
         const img = new Image();
         img.src = event.target?.result as string;
@@ -293,7 +303,8 @@ export function DataActions({ dateRange }: DataActionsProps) {
               const ctx = canvas.getContext("2d");
               if (!ctx) return res(null);
               ctx.drawImage(img, 0, 0, w, h);
-              canvas.toBlob((blob) => res(blob), "image/webp", q);
+              // Pertahankan tipe asli, fallback ke jpeg
+              canvas.toBlob((blob) => res(blob), processFile.type || "image/jpeg", q);
             });
           };
 
@@ -314,24 +325,23 @@ export function DataActions({ dateRange }: DataActionsProps) {
           }
 
           if (currentBlob) {
-            const newFileName = file.name.replace(/\.[^/.]+$/, "") + ".webp";
-            const compressedFile = new File([currentBlob], newFileName, {
-              type: "image/webp",
+            const compressedFile = new File([currentBlob], processFile.name, {
+              type: processFile.type || "image/jpeg",
               lastModified: Date.now(),
             });
 
-            if (compressedFile.size > file.size && file.size <= MAX_FILE_SIZE) {
-              resolve(file);
+            if (compressedFile.size > processFile.size && processFile.size <= MAX_FILE_SIZE) {
+              resolve(processFile);
             } else {
               resolve(compressedFile);
             }
           } else {
-            resolve(file);
+            resolve(processFile);
           }
         };
-        img.onerror = () => resolve(file);
+        img.onerror = () => resolve(processFile);
       };
-      reader.onerror = () => resolve(file);
+      reader.onerror = () => resolve(processFile);
     });
   };
 

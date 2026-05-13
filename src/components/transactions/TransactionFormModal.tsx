@@ -10,6 +10,7 @@ import { LuPlus } from "react-icons/lu";
 import { createCategory, getCategories } from "@/api/categoryApi";
 import { ErrorModal } from "@/components/ErrorModal";
 import { CategorySelect } from "@/components/CategorySelect";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import type {
   Transaction,
   TaxItem,
@@ -50,6 +51,7 @@ export function TransactionFormModal({
     [listCategory],
   );
   const [modalError, setModalError] = useState("");
+  const [showDateWarning, setShowDateWarning] = useState(false);
 
   const isEdit = !!editData;
   const isOcr = !!ocrPrefill;
@@ -173,9 +175,14 @@ export function TransactionFormModal({
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = (skipDateCheck = false) => {
     const val = parseInt(nominal.replace(/[^0-9]/g, ""), 10);
     if (val <= 0 || !kategori || !name.trim()) return;
+
+    if (!skipDateCheck && isOcr && date !== now.format("YYYY-MM-DD")) {
+      setShowDateWarning(true);
+      return;
+    }
 
     const selectedDate = dayjs(date);
     const dateWithTime = isEdit
@@ -785,7 +792,7 @@ export function TransactionFormModal({
                 Batal
               </button>
               <button
-                onClick={handleSubmit}
+                onClick={() => handleSubmit()}
                 disabled={!canSubmit}
                 className="flex-1 h-11 font-mono text-[13px] font-bold uppercase rounded-lg disabled:opacity-50"
                 style={{
@@ -801,6 +808,19 @@ export function TransactionFormModal({
         </div>
       </div>
       <ErrorModal message={modalError} onClose={() => setModalError("")} />
+      
+      <ConfirmModal
+        open={showDateWarning}
+        title="Konfirmasi Tanggal"
+        description={`Tanggal struk ini (${dayjs(date).format("DD MMM YYYY")}) bukan hari ini.\n\nLanjutkan simpan transaksi dengan tanggal ini?`}
+        confirmText="Lanjutkan"
+        cancelText="Batal"
+        onConfirm={() => {
+          setShowDateWarning(false);
+          handleSubmit(true); // skip date check
+        }}
+        onClose={() => setShowDateWarning(false)}
+      />
     </>
   );
 }

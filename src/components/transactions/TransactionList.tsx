@@ -11,6 +11,7 @@ import {
 import { formatCurrency } from "@/utils";
 import { useIncomeStore } from "@/store/income";
 import { TransactionFormModal } from "./TransactionFormModal";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
 
 interface TransactionListProps {
   transactions: Transaction[];
@@ -440,7 +441,11 @@ export function TransactionList({ transactions }: TransactionListProps) {
       )}
 
       {deletingTx && (
-        <DeleteConfirmModal
+        <ConfirmModal
+          open={!!deletingTx}
+          title="Hapus Transaksi"
+          description="Yakin ingin menghapus transaksi ini? Data yang dihapus tidak dapat dikembalikan."
+          confirmText="Hapus"
           onConfirm={() => {
             deleteTransaction(deletingTx);
             setDeletingTx(null);
@@ -449,77 +454,6 @@ export function TransactionList({ transactions }: TransactionListProps) {
           onClose={() => setDeletingTx(null)}
         />
       )}
-    </div>
-  );
-}
-
-function DeleteConfirmModal({
-  onConfirm,
-  onClose,
-}: {
-  onConfirm: () => void;
-  onClose: () => void;
-}) {
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: "rgba(0,0,0,0.6)" }}
-      onClick={(e) => e.target === e.currentTarget && onClose()}
-    >
-      <div
-        className="w-full max-w-sm rounded-xl"
-        style={{
-          background: "var(--surface)",
-          border: "1px solid var(--border-visible)",
-        }}
-      >
-        <div
-          className="p-4"
-          style={{ borderBottom: "1px solid var(--border)" }}
-        >
-          <p
-            className="text-[16px] font-semibold text-center"
-            style={{ color: "var(--text-display)" }}
-          >
-            Hapus Transaksi
-          </p>
-        </div>
-
-        <div className="p-5 text-center">
-          <p className="text-[14px]" style={{ color: "var(--text-secondary)" }}>
-            Yakin ingin menghapus transaksi ini? Data yang dihapus tidak dapat
-            dikembalikan.
-          </p>
-        </div>
-
-        <div
-          className="p-4 flex gap-3"
-          style={{ borderTop: "1px solid var(--border)" }}
-        >
-          <button
-            onClick={onConfirm}
-            className="flex-1 h-10 text-[13px] font-bold rounded-lg"
-            style={{
-              background: "var(--accent)",
-              color: "white",
-              border: "none",
-            }}
-          >
-            Hapus
-          </button>
-          <button
-            onClick={onClose}
-            className="flex-1 h-10 text-[13px] font-medium rounded-lg"
-            style={{
-              border: "1px solid var(--border-visible)",
-              color: "var(--text-primary)",
-              background: "transparent",
-            }}
-          >
-            Batal
-          </button>
-        </div>
-      </div>
     </div>
   );
 }
