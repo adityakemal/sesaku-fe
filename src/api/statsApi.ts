@@ -21,6 +21,7 @@ export interface CategoryBreakdownItem {
 export interface SpendingTrendItem {
   day: string; // "YYYY-MM-DD"
   total: number;
+  categories: Record<string, number>;
 }
 
 export interface PlanSummary {

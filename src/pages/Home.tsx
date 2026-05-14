@@ -96,7 +96,7 @@ export default function Home() {
     staleTime: 30_000,
   });
 
-  // ── Fetch spending trend for selected month ─────────────────────────────
+  // ── Fetch spending trend for selected month ──────────────────────────────
   const { data: trendData } = useQuery({
     queryKey: ["spending-trend", monthParams.start],
     queryFn: async () => {
@@ -544,7 +544,7 @@ export default function Home() {
                   >
                     Tren Pengeluaran
                   </p>
-                  <SpendingTrendChart data={trendData ?? []} />
+                  <SpendingTrendChart data={trendData ?? []} selectedMonth={selectedMonth} />
                 </div>
               </>
             )}

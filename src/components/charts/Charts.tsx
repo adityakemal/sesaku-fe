@@ -134,146 +134,253 @@ export function CategoryChart({ data: items }: CategoryChartProps) {
 
 interface SpendingTrendChartProps {
   data: SpendingTrendItem[];
+  selectedMonth?: dayjs.Dayjs;
 }
 
-export function SpendingTrendChart({ data: days }: SpendingTrendChartProps) {
-  const [viewMode, setViewMode] = useState<"weekly" | "daily" | "monthly">(
-    "weekly",
-  );
+export function SpendingTrendChart({
+  data: days,
+  selectedMonth,
+}: SpendingTrendChartProps) {
+  const [viewMode, setViewMode] = useState<"daily" | "weekly">("daily");
+
+  const fmtFull = useMemo(() => new Intl.NumberFormat("id-ID"), []);
+
+  const peakDay = useMemo(() => {
+    if (days.length === 0) return null;
+    return days.reduce((max, d) => (d.total > max.total ? d : max), days[0]);
+  }, [days]);
 
   const chartData = useMemo(() => {
     if (days.length === 0) return null;
 
     if (viewMode === "daily") {
+      // Show only days that have transactions, labeled as day-of-month number
       return {
         labels: days.map((d) => dayjs(d.day).format("D")),
         datasets: [
           {
             data: days.map((d) => d.total),
-            backgroundColor: "rgba(215, 25, 33, 0.5)",
-            hoverBackgroundColor: "rgba(215, 25, 33, 0.8)",
+            backgroundColor: days.map((d) =>
+              peakDay?.day === d.day
+                ? "rgba(215, 25, 33, 0.9)"
+                : "rgba(215, 25, 33, 0.45)",
+            ),
+            hoverBackgroundColor: "rgba(215, 25, 33, 1)",
             borderWidth: 0,
-            borderRadius: 2,
-            barPercentage: 0.8,
+            borderRadius: 4,
+            barPercentage: 0.7,
+            customData: {
+              categoriesList: days.map((d) => (d as any).categories || {}),
+              rawLabels: days.map((d) => dayjs(d.day).format("D MMM YYYY")),
+            },
           },
         ],
       };
     }
 
-    if (viewMode === "monthly") {
-      const monthMap: Record<string, number> = {};
-      days.forEach((d) => {
-        const key = d.day.slice(0, 7); // "YYYY-MM"
-        monthMap[key] = (monthMap[key] || 0) + d.total;
-      });
-      const sorted = Object.entries(monthMap).sort(([a], [b]) =>
-        a.localeCompare(b),
-      );
-      return {
-        labels: sorted.map(([k]) => dayjs(k + "-01").format("MMM YY")),
-        datasets: [
-          {
-            data: sorted.map(([, v]) => v),
-            backgroundColor: "rgba(215, 25, 33, 0.5)",
-            hoverBackgroundColor: "rgba(215, 25, 33, 0.8)",
-            borderWidth: 0,
-            borderRadius: 6,
-            barPercentage: 0.6,
-          },
-        ],
-      };
-    }
-
-    // Weekly: group consecutive days into ~7-day buckets
-    const weekMap: Record<string, number> = {};
+    // Weekly: group days into numbered weeks of the selected month
+    const monthRef = selectedMonth ?? dayjs();
+    const weekMap: Record<
+      string,
+      {
+        total: number;
+        categories: Record<string, number>;
+        label: string;
+        rawLabel: string;
+      }
+    > = {};
     days.forEach((d) => {
-      const weekStart = dayjs(d.day).startOf("week").format("MM/DD");
-      weekMap[weekStart] = (weekMap[weekStart] || 0) + d.total;
+      const dayOfMonth = dayjs(d.day).date();
+      const weekNum = Math.ceil(dayOfMonth / 7);
+      const key = `w${weekNum}`;
+      const weekStart = monthRef.startOf("month").add((weekNum - 1) * 7, "day");
+      const weekEnd = weekStart.add(6, "day");
+      const rawLabel = `${weekStart.format("D")}–${weekEnd.format("D MMM")}`;
+      if (!weekMap[key]) {
+        weekMap[key] = {
+          total: 0,
+          categories: {},
+          label: `Mg ${weekNum}`,
+          rawLabel,
+        };
+      }
+      weekMap[key].total += d.total;
+      const cats = (d as any).categories as Record<string, number> | undefined;
+      if (cats) {
+        for (const [cat, val] of Object.entries(cats)) {
+          weekMap[key].categories[cat] =
+            (weekMap[key].categories[cat] || 0) + val;
+        }
+      }
     });
+
     const sorted = Object.entries(weekMap).sort(([a], [b]) =>
       a.localeCompare(b),
     );
     return {
-      labels: sorted.map(([k]) => k),
+      labels: sorted.map(([, v]) => v.label),
       datasets: [
         {
-          data: sorted.map(([, v]) => v),
+          data: sorted.map(([, v]) => v.total),
           backgroundColor: "rgba(215, 25, 33, 0.5)",
-          hoverBackgroundColor: "rgba(215, 25, 33, 0.8)",
+          hoverBackgroundColor: "rgba(215, 25, 33, 0.9)",
           borderWidth: 0,
           borderRadius: 6,
-          barPercentage: 0.6,
+          barPercentage: 0.55,
+          customData: {
+            categoriesList: sorted.map(([, v]) => v.categories),
+            rawLabels: sorted.map(([, v]) => v.rawLabel),
+          },
         },
       ],
     };
-  }, [days, viewMode]);
+  }, [days, viewMode, peakDay, selectedMonth]);
 
   if (days.length === 0) {
     return (
       <div className="text-center py-8">
         <p className="text-[13px]" style={{ color: "var(--text-disabled)" }}>
-          Belum ada data
+          Belum ada transaksi bulan ini
         </p>
       </div>
     );
   }
 
+  const tooltipCallbacks = {
+    title: (ctx: any) => {
+      const idx = ctx[0].dataIndex;
+      const ds = ctx[0].dataset as any;
+      return ds.customData?.rawLabels?.[idx] || ctx[0].label;
+    },
+    label: (ctx: any) => {
+      return `Total: Rp ${fmtFull.format(ctx.parsed.y)}`;
+    },
+    afterBody: (ctx: any) => {
+      const idx = ctx[0].dataIndex;
+      const ds = ctx[0].dataset as any;
+      const cats = ds.customData?.categoriesList?.[idx];
+      if (!cats || Object.keys(cats).length === 0) return [];
+      const sorted = Object.entries(cats)
+        .filter(([, val]) => (val as number) > 0)
+        .sort(([, a], [, b]) => (b as number) - (a as number));
+      if (sorted.length === 0) return [];
+      const lines: string[] = [""];
+      for (const [c, val] of sorted) {
+        lines.push(`  ${c} : Rp ${fmtFull.format(val as number)}`);
+      }
+      return lines;
+    },
+  };
+
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex gap-2">
-        {(["weekly", "daily", "monthly"] as const).map((mode) => (
-          <button
-            key={mode}
-            onClick={() => setViewMode(mode)}
-            className="px-3 h-8 text-[12px] font-semibold rounded-lg transition-colors"
-            style={{
-              background: viewMode === mode ? "var(--accent)" : "transparent",
-              color: viewMode === mode ? "white" : "var(--text-secondary)",
-              border:
-                viewMode === mode
-                  ? "1px solid var(--accent)"
-                  : "1px solid var(--border)",
-            }}
-          >
-            {mode === "weekly"
-              ? "Per Minggu"
-              : mode === "daily"
-                ? "Per Hari"
-                : "Per Bulan"}
-          </button>
-        ))}
-      </div>
-      <div style={{ height: 160 }}>
-        {chartData && (
-          <Bar
-            data={chartData}
-            options={{
-              plugins: { legend: { display: false } },
-              scales: {
-                x: {
-                  grid: { display: false },
-                  ticks: {
-                    color: "rgba(150, 150, 150, 0.8)",
-                    font: { size: 10 },
-                  },
-                  border: { display: false },
-                },
-                y: {
-                  grid: { color: "rgba(150, 150, 150, 0.2)" },
-                  ticks: {
-                    color: "rgba(150, 150, 150, 0.8)",
-                    font: { size: 10 },
-                    callback: (v) => compact.format(Number(v)),
-                  },
-                  border: { display: false },
-                },
-              },
-              responsive: true,
-              maintainAspectRatio: false,
-            }}
-          />
+      {/* ── Header row: toggle + peak badge ── */}
+      <div className="flex items-center justify-between">
+        <div
+          className="flex rounded-lg overflow-hidden"
+          style={{ border: "1px solid var(--border)" }}
+        >
+          {(["daily", "weekly"] as const).map((mode) => (
+            <button
+              key={mode}
+              onClick={() => setViewMode(mode)}
+              className="px-3 h-7 text-[11px] font-semibold transition-colors"
+              style={{
+                background: viewMode === mode ? "var(--accent)" : "transparent",
+                color: viewMode === mode ? "white" : "var(--text-secondary)",
+                border: "none",
+                cursor: "pointer",
+              }}
+            >
+              {mode === "daily" ? "Harian" : "Mingguan"}
+            </button>
+          ))}
+        </div>
+        {peakDay && (
+          <div className="text-right">
+            <p
+              className="text-[10px]"
+              style={{ color: "var(--text-disabled)" }}
+            >
+              Puncak bulan ini
+            </p>
+            <p
+              className="text-[11px] font-semibold font-mono"
+              style={{ color: "var(--accent)" }}
+            >
+              {dayjs(peakDay.day).format("D MMM")} &middot;{" "}
+              {compact.format(peakDay.total)}
+            </p>
+          </div>
         )}
       </div>
+
+      {/* ── Bar chart (horizontal scroll on mobile) ── */}
+      {chartData &&
+        (() => {
+          const dataLen = chartData.labels?.length ?? 0;
+          // Minimum 32px per bar; at least fill the container
+          const minPxPerBar = viewMode === "daily" ? 32 : 64;
+          const minChartW = dataLen * minPxPerBar;
+          return (
+            <div style={{ overflowX: "auto", overflowY: "hidden" }}>
+              <div style={{ minWidth: minChartW, height: 160 }}>
+                <Bar
+                  data={chartData}
+                  options={{
+                    plugins: {
+                      legend: { display: false },
+                      tooltip: {
+                        mode: "index",
+                        intersect: false,
+                        displayColors: false,
+                        backgroundColor: "rgba(15,15,15,0.95)",
+                        titleColor: "rgba(255,255,255,0.9)",
+                        bodyColor: "rgba(200,200,200,0.85)",
+                        borderColor: "rgba(215,25,33,0.35)",
+                        borderWidth: 1,
+                        padding: 10,
+                        callbacks: tooltipCallbacks,
+                      },
+                    },
+                    scales: {
+                      x: {
+                        grid: { display: false },
+                        ticks: {
+                          color: "rgba(150,150,150,0.9)",
+                          font: { size: 10 },
+                          maxRotation: 0,
+                        },
+                        border: { display: false },
+                      },
+                      y: {
+                        grid: { color: "rgba(150,150,150,0.12)" },
+                        ticks: {
+                          color: "rgba(150,150,150,0.9)",
+                          font: { size: 10 },
+                          callback: (v) => compact.format(Number(v)),
+                        },
+                        border: { display: false },
+                      },
+                    },
+                    responsive: true,
+                    maintainAspectRatio: false,
+                  }}
+                />
+              </div>
+            </div>
+          );
+        })()}
+
+      {/* ── Context label ── */}
+      <p
+        className="text-[10px] text-center"
+        style={{ color: "var(--text-disabled)" }}
+      >
+        {viewMode === "daily"
+          ? `${days.length} hari bertransaksi · hover untuk detail kategori`
+          : `Minggu 1–5 dalam bulan ini`}
+      </p>
     </div>
   );
 }
@@ -392,9 +499,11 @@ export function PlanComparisonChart({ items }: PlanComparisonChartProps) {
                   color: "rgba(150, 150, 150, 0.8)",
                   font: { size: 10 },
                 },
+                stacked: true,
                 border: { display: false },
               },
               y: {
+                stacked: true,
                 grid: { color: "rgba(150, 150, 150, 0.2)" },
                 ticks: {
                   color: "rgba(150, 150, 150, 0.8)",
