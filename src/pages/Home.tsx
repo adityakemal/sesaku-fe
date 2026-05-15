@@ -143,7 +143,7 @@ export default function Home() {
   return (
     <PageLayout>
       {/* Header — no dateRange picker here */}
-      <AppHeader title="sesaKu" isShowDatepicker={false} />
+      <AppHeader title="sesaKu" isShowDatepicker={false} showLogo={true} />
 
       {/* ── 1. REALITA VS PLAN ── */}
       {activePlan ? (
@@ -282,7 +282,11 @@ export default function Home() {
                   border: "1px solid rgba(212,168,67,0.3)",
                 }}
               >
-                <LuCircleAlert size={16} color="var(--warning)" className="mt-0.5 shrink-0" />
+                <LuCircleAlert
+                  size={16}
+                  color="var(--warning)"
+                  className="mt-0.5 shrink-0"
+                />
                 <div>
                   <p
                     className="text-[12px] font-semibold mb-0.5"
@@ -544,7 +548,10 @@ export default function Home() {
                   >
                     Tren Pengeluaran
                   </p>
-                  <SpendingTrendChart data={trendData ?? []} selectedMonth={selectedMonth} />
+                  <SpendingTrendChart
+                    data={trendData ?? []}
+                    selectedMonth={selectedMonth}
+                  />
                 </div>
               </>
             )}

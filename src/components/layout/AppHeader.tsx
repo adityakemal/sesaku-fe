@@ -1,6 +1,5 @@
-
-import type { ReactNode } from 'react';
-import { DateRangePicker, type DateRange } from '../DatePicker';
+import type { ReactNode } from "react";
+import { DateRangePicker, type DateRange } from "../DatePicker";
 
 interface AppHeaderProps {
   title: string;
@@ -11,11 +10,13 @@ interface AppHeaderProps {
   maxRangeDays?: number;
   /** Slot for any custom content rendered on the right side of the header */
   rightSlot?: ReactNode;
+  showLogo?: boolean;
 }
 
 export function AppHeader({
   title,
   isShowDatepicker = true,
+  showLogo = false,
   dateRange,
   onRangeChange,
   maxRangeDays,
@@ -23,21 +24,34 @@ export function AppHeader({
 }: AppHeaderProps) {
   return (
     <header
-      className="flex justify-between items-center sticky top-0 z-30 -mx-4 px-4 py-3"
+      className="flex justify-between items-center sticky top-0 z-30 -mx-4 px-4 h-[57px]"
       style={{
         background: "var(--black)",
         borderBottom: "1px solid var(--border)",
       }}
     >
-      <h1
-        className="font-display text-2xl md:text-4xl font-bold"
-        style={{ color: 'var(--text-display)' }}
-      >
-        {title}
-      </h1>
+      <div className="flex items-center gap-2 sm:gap-2">
+        {showLogo && (
+          <img
+            className="h-6 sm:h-10 object-contain rotate-180"
+            src="img/logo.png"
+            alt="logo"
+          />
+        )}
+        <h1
+          className="font-display text-2xl md:text-4xl font-black"
+          style={{ color: "var(--text-display)" }}
+        >
+          {title}
+        </h1>
+      </div>
       <div className="flex items-center gap-2">
         {isShowDatepicker && dateRange && onRangeChange && (
-          <DateRangePicker range={dateRange} onChange={onRangeChange} maxRangeDays={maxRangeDays} />
+          <DateRangePicker
+            range={dateRange}
+            onChange={onRangeChange}
+            maxRangeDays={maxRangeDays}
+          />
         )}
         {rightSlot}
       </div>
