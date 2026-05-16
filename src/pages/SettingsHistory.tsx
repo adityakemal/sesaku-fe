@@ -140,10 +140,15 @@ export default function SettingsHistory() {
                   </div>
                   {log.detail && (
                     <p
-                      className="text-[11px] mt-1 truncate"
+                      className="text-[11px] mt-1"
                       style={{ color: "var(--text-secondary)" }}
                     >
-                      {log.detail}
+                      {log.detail?.split("\n").map((line, i) => (
+                        <span key={i}>
+                          {line}
+                          <br />
+                        </span>
+                      ))}
                     </p>
                   )}
                   <p
