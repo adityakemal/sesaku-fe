@@ -18,6 +18,7 @@ import type { ChartData, TooltipItem } from "chart.js";
 import dayjs from "dayjs";
 import type { CategoryBreakdownItem, SpendingTrendItem } from "@/api/statsApi";
 import { getChartColor } from "./colors";
+import { useTheme } from "@/hooks";
 
 ChartJS.register(
   ArcElement,
@@ -177,6 +178,8 @@ export function SpendingTrendChart({
 }: SpendingTrendChartProps) {
   const fmtFull = useMemo(() => new Intl.NumberFormat("id-ID"), []);
 
+  const { darkMode } = useTheme();
+
   const visibleDays = useMemo(() => {
     if (!selectedCategory) return days;
 
@@ -217,12 +220,12 @@ export function SpendingTrendChart({
             label: "Trend",
             data: visibleDays.map((d) => d.total),
             // Neutral white-ish so it contrasts against any bar color
-            borderColor: "rgba(255,255,255,0.55)",
+            borderColor: darkMode ? "white" : "#gray",
             borderWidth: 1.5,
             tension: 0.35,
             pointRadius: 3,
             pointHoverRadius: 5,
-            pointBackgroundColor: "rgba(255,255,255,0.9)",
+            pointBackgroundColor: darkMode ? "white" : "#gray",
             fill: false,
           },
           {
@@ -297,12 +300,12 @@ export function SpendingTrendChart({
           type: "line",
           label: "Trend",
           data: sorted.map(([, v]) => v.total),
-          borderColor: "rgba(255,255,255,0.55)",
+          borderColor: darkMode ? "white" : "#gray",
           borderWidth: 1.5,
           tension: 0.35,
           pointRadius: 3,
           pointHoverRadius: 5,
-          pointBackgroundColor: "rgba(255,255,255,0.9)",
+          pointBackgroundColor: darkMode ? "white" : "#gray",
           fill: false,
         },
         {
@@ -320,7 +323,14 @@ export function SpendingTrendChart({
         },
       ],
     };
-  }, [visibleDays, viewMode, peakDay, selectedMonth, selectedCategoryColor]);
+  }, [
+    visibleDays,
+    viewMode,
+    peakDay,
+    selectedMonth,
+    selectedCategoryColor,
+    darkMode,
+  ]);
 
   if (days.length === 0) {
     return (

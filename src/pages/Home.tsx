@@ -624,7 +624,7 @@ export default function Home() {
                       className="flex-shrink-0 flex items-center gap-1.5 px-3 h-7 rounded-full text-[11px] font-semibold transition-all"
                       style={{
                         color: !activeTrendCategory
-                          ? "white"
+                          ? "var(--accent)"
                           : "var(--text-secondary)",
                         border: !activeTrendCategory
                           ? "1px solid var(--accent)"

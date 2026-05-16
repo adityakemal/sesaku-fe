@@ -214,5 +214,6 @@ export const useIncomeStore = create<IncomeState>()((set, get) => ({
     queryClient.invalidateQueries({ queryKey: ["category-breakdown"] });
     queryClient.invalidateQueries({ queryKey: ["spending-trend"] });
     queryClient.invalidateQueries({ queryKey: ["plan-summary"] });
+    get().initStore();
   },
 }));
