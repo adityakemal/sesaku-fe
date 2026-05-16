@@ -96,7 +96,7 @@ export function CategoryChart({
   }
 
   return (
-    <div className="flex flex-col md:flex-row gap-4 items-center">
+    <div className="flex flex-col md:flex-row gap-4 items-center flex-col-reverse">
       <div style={{ width: 160, height: 160, flexShrink: 0 }}>
         <Doughnut
           data={chartData}
@@ -164,6 +164,7 @@ interface SpendingTrendChartProps {
   selectedCategory?: string | null;
   selectedCategoryColor?: string;
   onClearCategory?: () => void;
+  viewMode: "daily" | "weekly";
 }
 
 export function SpendingTrendChart({
@@ -172,9 +173,8 @@ export function SpendingTrendChart({
   selectedCategory,
   selectedCategoryColor,
   onClearCategory,
+  viewMode,
 }: SpendingTrendChartProps) {
-  const [viewMode, setViewMode] = useState<"daily" | "weekly">("daily");
-
   const fmtFull = useMemo(() => new Intl.NumberFormat("id-ID"), []);
 
   const visibleDays = useMemo(() => {
@@ -384,46 +384,29 @@ export function SpendingTrendChart({
 
   return (
     <div className="flex flex-col gap-3">
-      {/* ── Header row: toggle + peak badge ── */}
-      <div className="flex items-center justify-between gap-3">
-        <div
-          className="flex rounded-lg overflow-hidden"
-          style={{ border: "1px solid var(--border)" }}
-        >
-          {(["daily", "weekly"] as const).map((mode) => (
-            <button
-              key={mode}
-              onClick={() => setViewMode(mode)}
-              className="px-3 h-7 text-[11px] font-semibold transition-colors"
-              style={{
-                background: viewMode === mode ? "var(--accent)" : "transparent",
-                color: viewMode === mode ? "white" : "var(--text-secondary)",
-                border: "none",
-                cursor: "pointer",
-              }}
-            >
-              {mode === "daily" ? "Harian" : "Mingguan"}
-            </button>
-          ))}
+      {/* ── Peak badge (only shows when a peak day exists) ── */}
+      {/* {peakDay && (
+        <div className="flex justify-end">
+          <p
+            className="text-[11px] font-semibold font-mono"
+            style={{ color: "var(--accent)" }}
+          >
+            {dayjs(peakDay.day).format("D MMM")} &middot;{" "}
+            {compact.format(peakDay.total)}
+          </p>
         </div>
-        {peakDay && (
-          <div className="text-right">
-            <p
-              className="text-[10px]"
-              style={{ color: "var(--text-disabled)" }}
-            >
-              Puncak bulan ini
-            </p>
-            <p
-              className="text-[11px] font-semibold font-mono"
-              style={{ color: "var(--accent)" }}
-            >
-              {dayjs(peakDay.day).format("D MMM")} &middot;{" "}
-              {compact.format(peakDay.total)}
-            </p>
-          </div>
-        )}
-      </div>
+      )} */}
+      {/* ── Context label ── */}
+      <p
+        className="text-[10px] text-center"
+        style={{ color: "var(--text-disabled)" }}
+      >
+        {viewMode === "daily"
+          ? `${visibleDays.length} hari bertransaksi · hover untuk detail kategori`
+          : selectedCategory
+            ? `Filter ${selectedCategory} · Minggu 1–5 dalam bulan ini`
+            : `Minggu 1–5 dalam bulan ini`}
+      </p>
 
       {/* ── Bar chart (horizontal scroll on mobile) ── */}
       {chartData &&
@@ -502,18 +485,6 @@ export function SpendingTrendChart({
             </div>
           );
         })()}
-
-      {/* ── Context label ── */}
-      <p
-        className="text-[10px] text-center"
-        style={{ color: "var(--text-disabled)" }}
-      >
-        {viewMode === "daily"
-          ? `${visibleDays.length} hari bertransaksi · hover untuk detail kategori`
-          : selectedCategory
-            ? `Filter ${selectedCategory} · Minggu 1–5 dalam bulan ini`
-            : `Minggu 1–5 dalam bulan ini`}
-      </p>
     </div>
   );
 }

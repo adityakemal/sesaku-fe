@@ -143,6 +143,15 @@ export default function Home() {
 
   const activeTrendCategory = selectedTrendCategoryMeta?.name ?? null;
 
+  // ── View mode for trend chart (lifted from SpendingTrendChart) ────────────
+  const [viewMode, setViewMode] = useState<"daily" | "weekly">("daily");
+
+  // Peak day: the day with the highest total spending in trendData
+  const peakDay = useMemo(() => {
+    if (!trendData || trendData.length === 0) return null;
+    return trendData.reduce((max, d) => (d.total > max.total ? d : max));
+  }, [trendData]);
+
   if (!mounted || summaryLoading) return <LoadingPage />;
 
   return (
@@ -449,6 +458,26 @@ export default function Home() {
                   className="text-[10px] uppercase font-bold tracking-wide mb-1"
                   style={{ color: "var(--text-disabled)" }}
                 >
+                  Terbesar
+                </p>
+                <p
+                  className="text-[13px] font-mono font-bold"
+                  style={{ color: "var(--accent)" }}
+                >
+                  {formatToSimpleIDR(topCategory.total)}
+                </p>
+                <p
+                  className="text-[10px]"
+                  style={{ color: "var(--text-display)" }}
+                >
+                  {topCategory.name}
+                </p>
+              </div>
+              <div className="px-3 py-3 text-center border-l border-r border-[var(--border)]">
+                <p
+                  className="text-[10px] uppercase font-bold tracking-wide mb-1"
+                  style={{ color: "var(--text-disabled)" }}
+                >
                   Transaksi
                 </p>
                 <p
@@ -458,33 +487,36 @@ export default function Home() {
                   {rangeCount}
                 </p>
               </div>
-              <div className="px-3 py-3 text-center  border-l border-r border-[var(--border)]">
-                <p
-                  className="text-[10px] uppercase font-bold tracking-wide mb-1"
-                  style={{ color: "var(--text-disabled)" }}
-                >
-                  Rata/hari
-                </p>
-                <p
-                  className="text-[13px] font-mono font-bold"
-                  style={{ color: "var(--text-display)" }}
-                >
-                  {formatCurrency(dailyAvg)}
-                </p>
-              </div>
               <div className="px-3 py-3 text-center">
                 <p
                   className="text-[10px] uppercase font-bold tracking-wide mb-1"
                   style={{ color: "var(--text-disabled)" }}
                 >
-                  Rata/trx
+                  Puncak
                 </p>
-                <p
-                  className="text-[13px] font-mono font-bold"
-                  style={{ color: "var(--text-display)" }}
-                >
-                  {formatCurrency(avgPerTx)}
-                </p>
+                {peakDay ? (
+                  <>
+                    <p
+                      className="text-[13px] font-mono font-bold"
+                      style={{ color: "var(--accent)" }}
+                    >
+                      {formatToSimpleIDR(peakDay.total)}
+                    </p>
+                    <p
+                      className="text-[10px]"
+                      style={{ color: "var(--text-disabled)" }}
+                    >
+                      {dayjs(peakDay.day).format("D MMM")}
+                    </p>
+                  </>
+                ) : (
+                  <p
+                    className="text-[13px] font-mono font-bold"
+                    style={{ color: "var(--text-display)" }}
+                  >
+                    —
+                  </p>
+                )}
               </div>
             </div>
 
@@ -498,7 +530,10 @@ export default function Home() {
                   className="text-[11px]"
                   style={{ color: "var(--text-secondary)" }}
                 >
-                  Total bulan ini
+                  Total{" "}
+                  {selectedMonth.isSame(dayjs(), "month")
+                    ? "Bulan Ini"
+                    : dayjs(selectedMonth).format("MMMM YYYY")}
                 </p>
                 <p
                   className="text-[20px] font-mono font-bold"
@@ -507,7 +542,7 @@ export default function Home() {
                   {formatCurrency(rangeTotal)}
                 </p>
               </div>
-              {topCategory && (
+              {/* {topCategory && (
                 <div className="text-right">
                   <p
                     className="text-[11px]"
@@ -528,107 +563,108 @@ export default function Home() {
                     {formatCurrency(topCategory.total)}
                   </p>
                 </div>
-              )}
+              )} */}
             </div>
 
             {/* Charts */}
             {rangeCount > 0 && (
               <>
-                {/* category breakdown chart — pure display, no filter UI here */}
-                <div
-                  className="p-4"
-                  style={{ borderBottom: "1px solid var(--border)" }}
-                >
-                  <p
-                    className="text-[13px] font-medium mb-3"
-                    style={{ color: "var(--text-secondary)" }}
-                  >
-                    Kategori
-                  </p>
-                  <CategoryChart
-                    data={categoryData ?? []}
-                    selectedCategory={activeTrendCategory}
-                    onCategorySelect={setSelectedTrendCategory}
-                  />
-                </div>
-
                 {/* spending trend chart — filter lives here, where it makes sense */}
                 <div className="p-4">
-                  {/* Section header + filter pills */}
-                  <div className="mb-3">
+                  {/* Section header: title left, toggle right */}
+                  <div className="flex items-center justify-between mb-4">
                     <p
-                      className="text-[13px] font-medium mb-2"
+                      className="text-[13px] font-medium"
                       style={{ color: "var(--text-secondary)" }}
                     >
                       Tren Pengeluaran
                     </p>
-
-                    {/* Scrollable category filter pills */}
+                    {/* Daily / Weekly toggle */}
                     <div
-                      className="flex gap-1.5 overflow-x-auto pb-1"
+                      className="flex rounded-lg overflow-hidden"
+                      style={{ border: "1px solid var(--border)" }}
+                    >
+                      {(["daily", "weekly"] as const).map((mode) => (
+                        <button
+                          key={mode}
+                          type="button"
+                          onClick={() => setViewMode(mode)}
+                          className="px-3 h-7 text-[11px] font-semibold transition-colors"
+                          style={{
+                            background:
+                              viewMode === mode
+                                ? "var(--accent)"
+                                : "transparent",
+                            color:
+                              viewMode === mode
+                                ? "white"
+                                : "var(--text-secondary)",
+                            border: "none",
+                            cursor: "pointer",
+                          }}
+                        >
+                          {mode === "daily" ? "Harian" : "Mingguan"}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Scrollable category filter pills */}
+                  <div
+                    className="flex gap-1.5 overflow-x-auto pb-1 mb-3"
+                    style={{
+                      scrollbarWidth: "none",
+                      msOverflowStyle: "none",
+                    }}
+                  >
+                    {/* "Semua" pill */}
+                    <button
+                      type="button"
+                      onClick={() => setSelectedTrendCategory(null)}
+                      className="flex-shrink-0 flex items-center gap-1.5 px-3 h-7 rounded-full text-[11px] font-semibold transition-all"
                       style={{
-                        scrollbarWidth: "none",
-                        msOverflowStyle: "none",
+                        color: !activeTrendCategory
+                          ? "white"
+                          : "var(--text-secondary)",
+                        border: !activeTrendCategory
+                          ? "1px solid var(--accent)"
+                          : "1px solid var(--border-visible)",
                       }}
                     >
-                      {/* "Semua" pill */}
-                      <button
-                        type="button"
-                        onClick={() => setSelectedTrendCategory(null)}
-                        className="flex-shrink-0 flex items-center gap-1.5 px-3 h-7 rounded-full text-[11px] font-semibold transition-all"
-                        style={{
-                          background: !activeTrendCategory
-                            ? "var(--accent)"
-                            : "var(--black)",
-                          color: !activeTrendCategory
-                            ? "white"
-                            : "var(--text-secondary)",
-                          border: !activeTrendCategory
-                            ? "1px solid var(--accent)"
-                            : "1px solid var(--border-visible)",
-                        }}
-                      >
-                        Semua
-                      </button>
+                      Semua
+                    </button>
 
-                      {/* One pill per category */}
-                      {(categoryData ?? []).map((cat, i) => {
-                        const color = getChartColor(i);
-                        const isActive = activeTrendCategory === cat.name;
-                        return (
-                          <button
-                            key={cat.name}
-                            type="button"
-                            onClick={() =>
-                              setSelectedTrendCategory(
-                                isActive ? null : cat.name,
-                              )
-                            }
-                            className="flex-shrink-0 flex items-center gap-1.5 px-3 h-7 rounded-full text-[11px] font-semibold transition-all"
-                            style={{
-                              background: isActive ? color : "var(--black)",
-                              color: isActive
-                                ? "#fff"
-                                : "var(--text-secondary)",
-                              border: isActive
-                                ? `1px solid ${color}`
-                                : "1px solid var(--border-visible)",
-                              boxShadow: isActive
-                                ? `0 0 8px ${color}66`
-                                : "none",
-                            }}
-                          >
-                            {!isActive && (
-                              <span
-                                className="w-2 h-2 rounded-full flex-shrink-0"
-                                style={{ background: color }}
-                              />
-                            )}
-                            {cat.name}
-                          </button>
-                        );
-                      })}
-                    </div>
+                    {/* One pill per category */}
+                    {(categoryData ?? []).map((cat, i) => {
+                      const color = getChartColor(i);
+                      const isActive = activeTrendCategory === cat.name;
+                      return (
+                        <button
+                          key={cat.name}
+                          type="button"
+                          onClick={() =>
+                            setSelectedTrendCategory(isActive ? null : cat.name)
+                          }
+                          className="flex-shrink-0 flex items-center gap-1.5 px-3 h-7 rounded-full text-[11px] font-semibold transition-all"
+                          style={{
+                            background: isActive ? color : "var(--black)",
+                            color: isActive ? "#fff" : "var(--text-secondary)",
+                            border: isActive
+                              ? `1px solid ${color}`
+                              : "1px solid var(--border-visible)",
+                            boxShadow: isActive ? `0 0 8px ${color}66` : "none",
+                          }}
+                        >
+                          {!isActive && (
+                            <span
+                              className="w-2 h-2 rounded-full flex-shrink-0"
+                              style={{ background: color }}
+                            />
+                          )}
+                          {cat.name}
+                        </button>
+                      );
+                    })}
                   </div>
 
                   <SpendingTrendChart
@@ -637,6 +673,25 @@ export default function Home() {
                     selectedCategory={activeTrendCategory}
                     selectedCategoryColor={selectedTrendCategoryMeta?.color}
                     onClearCategory={() => setSelectedTrendCategory(null)}
+                    viewMode={viewMode}
+                  />
+                </div>
+
+                {/* category breakdown chart — pure display, no filter UI here */}
+                <div
+                  className="p-4"
+                  style={{ borderBottom: "1px solid var(--border)" }}
+                >
+                  {/* <p
+                    className="text-[13px] font-medium mb-3"
+                    style={{ color: "var(--text-secondary)" }}
+                  >
+                    Rincian Pengeluaran
+                  </p> */}
+                  <CategoryChart
+                    data={categoryData ?? []}
+                    selectedCategory={activeTrendCategory}
+                    onCategorySelect={setSelectedTrendCategory}
                   />
                 </div>
               </>
