@@ -7,6 +7,7 @@ import {
   SpendingTrendChart,
   PlanComparisonChart,
 } from "@/components/charts/Charts";
+import { getChartColor } from "@/components/charts/colors";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { LuCircleAlert } from "react-icons/lu";
 import { AppHeader } from "@/components/layout/AppHeader";
@@ -23,6 +24,7 @@ import {
 } from "@/api/statsApi";
 import { getPlans } from "@/api/planApi";
 import type { Plan as PlanType } from "@/types";
+import { formatToSimpleIDR } from "@/lib/utils";
 
 // Helper to format a month selector (YYYY-MM)
 const toMonthParam = (d: dayjs.Dayjs) => ({
@@ -35,6 +37,9 @@ export default function Home() {
   const { mounted } = useTheme();
   // UI-only: selected month for the spending section
   const [selectedMonth, setSelectedMonth] = useState(() => dayjs());
+  const [selectedTrendCategory, setSelectedTrendCategory] = useState<
+    string | null
+  >(null);
   const monthParams = useMemo(
     () => toMonthParam(selectedMonth),
     [selectedMonth],
@@ -121,6 +126,20 @@ export default function Home() {
   const planRemaining = planSummaryData?.planRemaining ?? 0;
   const planUsagePct = planSummaryData?.usagePercent ?? 0;
   const planCategories = planSummaryData?.categories ?? [];
+
+  const selectedTrendCategoryMeta = useMemo(() => {
+    if (!selectedTrendCategory || !categoryData) return null;
+    const index = categoryData.findIndex(
+      (c) => c.name === selectedTrendCategory,
+    );
+    if (index === -1) return null;
+    return {
+      ...categoryData[index],
+      color: getChartColor(index),
+    };
+  }, [categoryData, selectedTrendCategory]);
+
+  const activeTrendCategory = selectedTrendCategoryMeta?.name ?? null;
 
   if (!mounted) {
     return (
@@ -225,7 +244,7 @@ export default function Home() {
                 className="text-[13px] font-mono font-bold"
                 style={{ color: "rgba(91,155,246,0.95)" }}
               >
-                {formatCurrency(planTotal)}
+                {formatToSimpleIDR(planTotal)}
               </p>
             </div>
             <div className="px-3 py-3 text-center border-l border-r border-[var(--border)]">
@@ -239,7 +258,7 @@ export default function Home() {
                 className="text-[13px] font-mono font-bold"
                 style={{ color: "rgba(215,25,33,0.95)" }}
               >
-                {formatCurrency(planSpent)}
+                {formatToSimpleIDR(planSpent)}
               </p>
             </div>
             <div className="px-3 py-3 text-center">
@@ -529,6 +548,7 @@ export default function Home() {
             {/* Charts */}
             {rangeCount > 0 && (
               <>
+                {/* category breakdown chart — pure display, no filter UI here */}
                 <div
                   className="p-4"
                   style={{ borderBottom: "1px solid var(--border)" }}
@@ -539,18 +559,98 @@ export default function Home() {
                   >
                     Kategori
                   </p>
-                  <CategoryChart data={categoryData ?? []} />
+                  <CategoryChart
+                    data={categoryData ?? []}
+                    selectedCategory={activeTrendCategory}
+                    onCategorySelect={setSelectedTrendCategory}
+                  />
                 </div>
+
+                {/* spending trend chart — filter lives here, where it makes sense */}
                 <div className="p-4">
-                  <p
-                    className="text-[13px] font-medium mb-3"
-                    style={{ color: "var(--text-secondary)" }}
-                  >
-                    Tren Pengeluaran
-                  </p>
+                  {/* Section header + filter pills */}
+                  <div className="mb-3">
+                    <p
+                      className="text-[13px] font-medium mb-2"
+                      style={{ color: "var(--text-secondary)" }}
+                    >
+                      Tren Pengeluaran
+                    </p>
+
+                    {/* Scrollable category filter pills */}
+                    <div
+                      className="flex gap-1.5 overflow-x-auto pb-1"
+                      style={{
+                        scrollbarWidth: "none",
+                        msOverflowStyle: "none",
+                      }}
+                    >
+                      {/* "Semua" pill */}
+                      <button
+                        type="button"
+                        onClick={() => setSelectedTrendCategory(null)}
+                        className="flex-shrink-0 flex items-center gap-1.5 px-3 h-7 rounded-full text-[11px] font-semibold transition-all"
+                        style={{
+                          background: !activeTrendCategory
+                            ? "var(--accent)"
+                            : "var(--black)",
+                          color: !activeTrendCategory
+                            ? "white"
+                            : "var(--text-secondary)",
+                          border: !activeTrendCategory
+                            ? "1px solid var(--accent)"
+                            : "1px solid var(--border-visible)",
+                        }}
+                      >
+                        Semua
+                      </button>
+
+                      {/* One pill per category */}
+                      {(categoryData ?? []).map((cat, i) => {
+                        const color = getChartColor(i);
+                        const isActive = activeTrendCategory === cat.name;
+                        return (
+                          <button
+                            key={cat.name}
+                            type="button"
+                            onClick={() =>
+                              setSelectedTrendCategory(
+                                isActive ? null : cat.name,
+                              )
+                            }
+                            className="flex-shrink-0 flex items-center gap-1.5 px-3 h-7 rounded-full text-[11px] font-semibold transition-all"
+                            style={{
+                              background: isActive ? color : "var(--black)",
+                              color: isActive
+                                ? "#fff"
+                                : "var(--text-secondary)",
+                              border: isActive
+                                ? `1px solid ${color}`
+                                : "1px solid var(--border-visible)",
+                              boxShadow: isActive
+                                ? `0 0 8px ${color}66`
+                                : "none",
+                            }}
+                          >
+                            {!isActive && (
+                              <span
+                                className="w-2 h-2 rounded-full flex-shrink-0"
+                                style={{ background: color }}
+                              />
+                            )}
+                            {cat.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
                   <SpendingTrendChart
                     data={trendData ?? []}
                     selectedMonth={selectedMonth}
+                    selectedCategory={activeTrendCategory}
+                    selectedCategoryColor={selectedTrendCategoryMeta?.color}
+                    onClearCategory={() => setSelectedTrendCategory(null)}
                   />
                 </div>
               </>

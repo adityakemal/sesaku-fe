@@ -10,10 +10,13 @@ import {
   BarElement,
   PointElement,
   LineElement,
+  LogarithmicScale,
   Filler,
 } from "chart.js";
+import type { TooltipItem } from "chart.js";
 import dayjs from "dayjs";
 import type { CategoryBreakdownItem, SpendingTrendItem } from "@/api/statsApi";
+import { getChartColor } from "./colors";
 
 ChartJS.register(
   ArcElement,
@@ -24,6 +27,7 @@ ChartJS.register(
   BarElement,
   PointElement,
   LineElement,
+  LogarithmicScale,
   Filler,
 );
 
@@ -32,25 +36,30 @@ const compact = new Intl.NumberFormat("id-ID", {
   compactDisplay: "short",
 });
 
-const COLORS = [
-  "rgba(215, 25, 33, 0.8)",
-  "rgba(74, 158, 92, 0.8)",
-  "rgba(212, 168, 67, 0.8)",
-  "rgba(91, 155, 246, 0.8)",
-  "rgba(168, 85, 247, 0.8)",
-  "rgba(236, 72, 153, 0.8)",
-  "rgba(245, 158, 11, 0.8)",
-  "rgba(20, 184, 166, 0.8)",
-];
+type TrendTooltipData = {
+  categoriesList?: Record<string, number>[];
+  rawLabels?: string[];
+};
+
+type TrendTooltipDataset = TooltipItem<"bar">["dataset"] & {
+  customData?: TrendTooltipData;
+};
 
 // ── 1. CATEGORY CHART ─────────────────────────────────────────────────────
 // Accepts pre-aggregated data from /stats/category-breakdown
 
 interface CategoryChartProps {
   data: CategoryBreakdownItem[];
+  /** Visually highlights a category in the legend & donut (controlled externally). */
+  selectedCategory?: string | null;
+  /** @deprecated — kept for API compat; filter is now handled by the parent's pill row */
+  onCategorySelect?: (category: string | null) => void;
 }
 
-export function CategoryChart({ data: items }: CategoryChartProps) {
+export function CategoryChart({
+  data: items,
+  selectedCategory,
+}: CategoryChartProps) {
   const { chartData, categoryData } = useMemo(() => {
     const labels = items.map((c) => c.name);
     const values = items.map((c) => c.total);
@@ -61,7 +70,7 @@ export function CategoryChart({ data: items }: CategoryChartProps) {
         datasets: [
           {
             data: values,
-            backgroundColor: labels.map((_, i) => COLORS[i % COLORS.length]),
+            backgroundColor: labels.map((_, i) => getChartColor(i)),
             borderWidth: 0,
             cutout: "65%",
           },
@@ -69,7 +78,7 @@ export function CategoryChart({ data: items }: CategoryChartProps) {
       },
       categoryData: items.map((c, i) => ({
         ...c,
-        color: COLORS[i % COLORS.length],
+        color: getChartColor(i),
       })),
     };
   }, [items]);
@@ -96,33 +105,48 @@ export function CategoryChart({ data: items }: CategoryChartProps) {
           }}
         />
       </div>
-      <div className="flex-1 w-full space-y-2">
-        {categoryData.map((c) => (
-          <div key={c.name} className="flex items-center gap-2">
+      <div className="flex-1 w-full space-y-1.5">
+        {categoryData.map((c) => {
+          const isSelected = selectedCategory === c.name;
+          const isDimmed = !!selectedCategory && !isSelected;
+
+          return (
             <div
-              className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-              style={{ background: c.color }}
-            />
-            <span
-              className="text-[13px] flex-1 truncate"
-              style={{ color: "var(--text-primary)" }}
+              key={c.name}
+              className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 transition-all"
+              style={{
+                background: isSelected ? "rgba(215,25,33,0.06)" : "transparent",
+                border: isSelected
+                  ? "1px solid rgba(215,25,33,0.18)"
+                  : "1px solid transparent",
+                opacity: isDimmed ? 0.4 : 1,
+              }}
             >
-              {c.name}
-            </span>
-            <span
-              className="text-[12px] font-mono text-right"
-              style={{ color: "var(--text-secondary)" }}
-            >
-              {compact.format(c.total)}
-            </span>
-            <span
-              className="text-[11px] font-mono w-8 text-right"
-              style={{ color: "var(--text-disabled)" }}
-            >
-              {c.percent.toFixed(0)}%
-            </span>
-          </div>
-        ))}
+              <div
+                className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                style={{ background: c.color }}
+              />
+              <span
+                className="text-[13px] flex-1 truncate"
+                style={{ color: "var(--text-primary)" }}
+              >
+                {c.name}
+              </span>
+              <span
+                className="text-[12px] font-mono text-right"
+                style={{ color: "var(--text-secondary)" }}
+              >
+                {compact.format(c.total)}
+              </span>
+              <span
+                className="text-[11px] font-mono w-8 text-right"
+                style={{ color: "var(--text-disabled)" }}
+              >
+                {c.percent.toFixed(0)}%
+              </span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -135,43 +159,89 @@ export function CategoryChart({ data: items }: CategoryChartProps) {
 interface SpendingTrendChartProps {
   data: SpendingTrendItem[];
   selectedMonth?: dayjs.Dayjs;
+  selectedCategory?: string | null;
+  selectedCategoryColor?: string;
+  onClearCategory?: () => void;
 }
 
 export function SpendingTrendChart({
   data: days,
   selectedMonth,
+  selectedCategory,
+  selectedCategoryColor,
+  onClearCategory,
 }: SpendingTrendChartProps) {
   const [viewMode, setViewMode] = useState<"daily" | "weekly">("daily");
 
   const fmtFull = useMemo(() => new Intl.NumberFormat("id-ID"), []);
 
+  const visibleDays = useMemo(() => {
+    if (!selectedCategory) return days;
+
+    return days
+      .map((d) => {
+        const total = d.categories?.[selectedCategory] ?? 0;
+        return {
+          ...d,
+          total,
+          categories: total > 0 ? { [selectedCategory]: total } : {},
+        };
+      })
+      .filter((d) => d.total > 0);
+  }, [days, selectedCategory]);
+
   const peakDay = useMemo(() => {
-    if (days.length === 0) return null;
-    return days.reduce((max, d) => (d.total > max.total ? d : max), days[0]);
-  }, [days]);
+    if (visibleDays.length === 0) return null;
+    return visibleDays.reduce(
+      (max, d) => (d.total > max.total ? d : max),
+      visibleDays[0],
+    );
+  }, [visibleDays]);
 
   const chartData = useMemo(() => {
-    if (days.length === 0) return null;
+    if (visibleDays.length === 0) return null;
+
+    const barColor = selectedCategoryColor ?? "rgba(215, 25, 33, 0.8)";
 
     if (viewMode === "daily") {
       // Show only days that have transactions, labeled as day-of-month number
       return {
-        labels: days.map((d) => dayjs(d.day).format("D")),
+        labels: visibleDays.map((d) => dayjs(d.day).format("D")),
         datasets: [
           {
-            data: days.map((d) => d.total),
-            backgroundColor: days.map((d) =>
+            // Line overlay — helps visually connect bars, especially when
+            // bar heights vary wildly. Excluded from tooltip via filter below.
+            type: "line",
+            label: "Trend",
+            data: visibleDays.map((d) => d.total),
+            // Neutral white-ish so it contrasts against any bar color
+            borderColor: "rgba(255,255,255,0.55)",
+            borderWidth: 1.5,
+            tension: 0.35,
+            pointRadius: 3,
+            pointHoverRadius: 5,
+            pointBackgroundColor: "rgba(255,255,255,0.9)",
+            fill: false,
+          },
+          {
+            // Bar dataset — all interaction + tooltip data lives here
+            data: visibleDays.map((d) => d.total),
+            backgroundColor: visibleDays.map((d) =>
               peakDay?.day === d.day
-                ? "rgba(215, 25, 33, 0.9)"
-                : "rgba(215, 25, 33, 0.45)",
+                ? barColor.replace(/0\.8\)$/, "0.95)")
+                : barColor.replace(/0\.8\)$/, "0.45)"),
             ),
-            hoverBackgroundColor: "rgba(215, 25, 33, 1)",
+            hoverBackgroundColor: barColor.replace(/0\.8\)$/, "1)"),
             borderWidth: 0,
             borderRadius: 4,
             barPercentage: 0.7,
+            // Guarantees every bar ≥ 5px tall even with extreme outliers (e.g. 64K vs 8M)
+            minBarLength: 5,
             customData: {
-              categoriesList: days.map((d) => (d as any).categories || {}),
-              rawLabels: days.map((d) => dayjs(d.day).format("D MMM YYYY")),
+              categoriesList: visibleDays.map((d) => d.categories || {}),
+              rawLabels: visibleDays.map((d) =>
+                dayjs(d.day).format("D MMM YYYY"),
+              ),
             },
           },
         ],
@@ -189,7 +259,7 @@ export function SpendingTrendChart({
         rawLabel: string;
       }
     > = {};
-    days.forEach((d) => {
+    visibleDays.forEach((d) => {
       const dayOfMonth = dayjs(d.day).date();
       const weekNum = Math.ceil(dayOfMonth / 7);
       const key = `w${weekNum}`;
@@ -205,7 +275,7 @@ export function SpendingTrendChart({
         };
       }
       weekMap[key].total += d.total;
-      const cats = (d as any).categories as Record<string, number> | undefined;
+      const cats = d.categories as Record<string, number> | undefined;
       if (cats) {
         for (const [cat, val] of Object.entries(cats)) {
           weekMap[key].categories[cat] =
@@ -221,12 +291,26 @@ export function SpendingTrendChart({
       labels: sorted.map(([, v]) => v.label),
       datasets: [
         {
+          // Line overlay — same filter pattern as daily, excluded from tooltip
+          type: "line",
+          label: "Trend",
           data: sorted.map(([, v]) => v.total),
-          backgroundColor: "rgba(215, 25, 33, 0.5)",
-          hoverBackgroundColor: "rgba(215, 25, 33, 0.9)",
+          borderColor: "rgba(255,255,255,0.55)",
+          borderWidth: 1.5,
+          tension: 0.35,
+          pointRadius: 3,
+          pointHoverRadius: 5,
+          pointBackgroundColor: "rgba(255,255,255,0.9)",
+          fill: false,
+        },
+        {
+          data: sorted.map(([, v]) => v.total),
+          backgroundColor: barColor.replace(/0\.8\)$/, "0.5)"),
+          hoverBackgroundColor: barColor.replace(/0\.8\)$/, "0.9)"),
           borderWidth: 0,
           borderRadius: 6,
           barPercentage: 0.55,
+          minBarLength: 5,
           customData: {
             categoriesList: sorted.map(([, v]) => v.categories),
             rawLabels: sorted.map(([, v]) => v.rawLabel),
@@ -234,7 +318,7 @@ export function SpendingTrendChart({
         },
       ],
     };
-  }, [days, viewMode, peakDay, selectedMonth]);
+  }, [visibleDays, viewMode, peakDay, selectedMonth, selectedCategoryColor]);
 
   if (days.length === 0) {
     return (
@@ -246,18 +330,42 @@ export function SpendingTrendChart({
     );
   }
 
+  if (selectedCategory && visibleDays.length === 0) {
+    return (
+      <div
+        className="rounded-xl px-4 py-6 text-center"
+        style={{ background: "var(--black)" }}
+      >
+        <p
+          className="text-[13px] font-medium"
+          style={{ color: "var(--text-primary)" }}
+        >
+          Tidak ada transaksi {selectedCategory} bulan ini
+        </p>
+        <button
+          type="button"
+          onClick={onClearCategory}
+          className="mt-2 text-[11px] font-semibold transition-opacity hover:opacity-80"
+          style={{ color: "var(--accent)" }}
+        >
+          Tampilkan semua kategori
+        </button>
+      </div>
+    );
+  }
+
   const tooltipCallbacks = {
-    title: (ctx: any) => {
+    title: (ctx: TooltipItem<"bar">[]) => {
       const idx = ctx[0].dataIndex;
-      const ds = ctx[0].dataset as any;
+      const ds = ctx[0].dataset as TrendTooltipDataset;
       return ds.customData?.rawLabels?.[idx] || ctx[0].label;
     },
-    label: (ctx: any) => {
-      return `Total: Rp ${fmtFull.format(ctx.parsed.y)}`;
+    label: (ctx: TooltipItem<"bar">) => {
+      return `Total: Rp ${fmtFull.format(ctx.parsed.y ?? 0)}`;
     },
-    afterBody: (ctx: any) => {
+    afterBody: (ctx: TooltipItem<"bar">[]) => {
       const idx = ctx[0].dataIndex;
-      const ds = ctx[0].dataset as any;
+      const ds = ctx[0].dataset as TrendTooltipDataset;
       const cats = ds.customData?.categoriesList?.[idx];
       if (!cats || Object.keys(cats).length === 0) return [];
       const sorted = Object.entries(cats)
@@ -266,7 +374,7 @@ export function SpendingTrendChart({
       if (sorted.length === 0) return [];
       const lines: string[] = [""];
       for (const [c, val] of sorted) {
-        lines.push(`  ${c} : Rp ${fmtFull.format(val as number)}`);
+        lines.push(`• ${c} : Rp ${fmtFull.format(val as number)}`);
       }
       return lines;
     },
@@ -275,7 +383,7 @@ export function SpendingTrendChart({
   return (
     <div className="flex flex-col gap-3">
       {/* ── Header row: toggle + peak badge ── */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3">
         <div
           className="flex rounded-lg overflow-hidden"
           style={{ border: "1px solid var(--border)" }}
@@ -322,11 +430,12 @@ export function SpendingTrendChart({
           // Minimum 32px per bar; at least fill the container
           const minPxPerBar = viewMode === "daily" ? 32 : 64;
           const minChartW = dataLen * minPxPerBar;
+
           return (
             <div style={{ overflowX: "auto", overflowY: "hidden" }}>
-              <div style={{ minWidth: minChartW, height: 160 }}>
+              <div style={{ minWidth: minChartW, height: 180 }}>
                 <Bar
-                  data={chartData}
+                  data={chartData as any}
                   options={{
                     plugins: {
                       legend: { display: false },
@@ -340,6 +449,11 @@ export function SpendingTrendChart({
                         borderColor: "rgba(215,25,33,0.35)",
                         borderWidth: 1,
                         padding: 10,
+                        // Exclude the "Trend" line overlay from tooltip items so that
+                        // ctx[0] in callbacks is always the bar dataset with customData.
+                        // Without this, with 2 datasets, ctx[0] = line (no customData)
+                        // which causes the category breakdown to disappear.
+                        filter: (item) => item.dataset.label !== "Trend",
                         callbacks: tooltipCallbacks,
                       },
                     },
@@ -359,7 +473,19 @@ export function SpendingTrendChart({
                           color: "rgba(150,150,150,0.9)",
                           font: { size: 10 },
                           callback: (v) => compact.format(Number(v)),
+                          maxTicksLimit: 5,
                         },
+                        // REQUIRED: Chart.js bar chart defaults to beginAtZero:true
+                        // which overrides suggestedMin and forces the axis to start
+                        // from 0 regardless of what suggestedMin is set to.
+                        // Setting false allows suggestedMin to actually take effect.
+                        beginAtZero: false,
+                        // Soft floor — Chart.js uses this unless real data goes below it.
+                        // Note: with very skewed data (e.g. 67K vs 8M), the axis
+                        // starting at 50K still won't make the 67K bar look tall —
+                        // that's honest data representation. minBarLength:5 ensures
+                        // all bars remain tappable regardless of visual height.
+                        suggestedMin: 50_000,
                         border: { display: false },
                       },
                     },
@@ -378,8 +504,10 @@ export function SpendingTrendChart({
         style={{ color: "var(--text-disabled)" }}
       >
         {viewMode === "daily"
-          ? `${days.length} hari bertransaksi · hover untuk detail kategori`
-          : `Minggu 1–5 dalam bulan ini`}
+          ? `${visibleDays.length} hari bertransaksi · hover untuk detail kategori`
+          : selectedCategory
+            ? `Filter ${selectedCategory} · Minggu 1–5 dalam bulan ini`
+            : `Minggu 1–5 dalam bulan ini`}
       </p>
     </div>
   );
@@ -416,7 +544,7 @@ export function PlanComparisonChart({ items }: PlanComparisonChartProps) {
               : "rgba(91, 155, 246, 0.55)",
           ),
           borderRadius: 4,
-          barPercentage: 0.8,
+          barPercentage: 1,
           categoryPercentage: 0.8,
         },
         {
@@ -428,7 +556,7 @@ export function PlanComparisonChart({ items }: PlanComparisonChartProps) {
               : "rgba(215, 25, 33, 0.55)",
           ),
           borderRadius: 4,
-          barPercentage: 0.8,
+          barPercentage: 1,
           categoryPercentage: 0.8,
         },
       ],
@@ -455,6 +583,10 @@ export function PlanComparisonChart({ items }: PlanComparisonChartProps) {
         <Bar
           data={chartData}
           options={{
+            interaction: {
+              mode: "index",
+              intersect: false,
+            },
             onClick: (_evt, elements) => {
               if (elements.length === 0) {
                 setSelected(null);
@@ -499,16 +631,17 @@ export function PlanComparisonChart({ items }: PlanComparisonChartProps) {
                   color: "rgba(150, 150, 150, 0.8)",
                   font: { size: 10 },
                 },
-                stacked: true,
+                // stacked: true,
                 border: { display: false },
               },
               y: {
-                stacked: true,
+                // stacked: true,
                 grid: { color: "rgba(150, 150, 150, 0.2)" },
                 ticks: {
                   color: "rgba(150, 150, 150, 0.8)",
                   font: { size: 10 },
                   callback: (v) => compact.format(Number(v)),
+                  count: 6,
                 },
                 border: { display: false },
               },

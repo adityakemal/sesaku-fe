@@ -14,8 +14,19 @@ export function formatCurrency(value: number) {
   }).format(value);
 }
 
-export function isDuplicateCategory(list: Category[], name: string, excludeId?: number) {
+export function formatToSimpleIDR(value: number): string {
+  return new Intl.NumberFormat("id-ID", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(value);
+}
+
+export function isDuplicateCategory(
+  list: Category[],
+  name: string,
+  excludeId?: number,
+) {
   return list.some(
-    (c) => c.name.toLowerCase() === name.toLowerCase() && c.id !== excludeId
+    (c) => c.name.toLowerCase() === name.toLowerCase() && c.id !== excludeId,
   );
 }
