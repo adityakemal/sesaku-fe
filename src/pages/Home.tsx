@@ -464,13 +464,13 @@ export default function Home() {
                   className="text-[13px] font-mono font-bold"
                   style={{ color: "var(--accent)" }}
                 >
-                  {formatToSimpleIDR(topCategory.total)}
+                  {formatToSimpleIDR(topCategory?.total ?? 0)}
                 </p>
                 <p
                   className="text-[10px]"
                   style={{ color: "var(--text-display)" }}
                 >
-                  {topCategory.name}
+                  {topCategory?.name ?? ""}
                 </p>
               </div>
               <div className="px-3 py-3 text-center border-l border-r border-[var(--border)]">
