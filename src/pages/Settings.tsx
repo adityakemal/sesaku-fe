@@ -3,22 +3,22 @@ import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { PageLayout } from "@/components/layout/PageLayout";
-import { PageBoneyard } from "@/components/boneyard/PageBoneyard";
+
 import { LoadingPage } from "@/components/layout/LoadingPage";
 import { logoutUser } from "@/api/authApi";
 import { getWorkspaces } from "@/api/memberApi";
 import { useIncomeStore } from "@/store/income";
 import { useStorageStore } from "@/store/storage";
 import { useTheme } from "@/hooks/useTheme";
-import { 
-  LuChevronRight, 
-  LuTags, 
-  LuUsers, 
-  LuBuilding, 
-  LuHistory, 
-  LuLogOut, 
-  LuInfo, 
-  LuMessageCircle 
+import {
+  LuChevronRight,
+  LuTags,
+  LuUsers,
+  LuBuilding,
+  LuHistory,
+  LuLogOut,
+  LuInfo,
+  LuMessageCircle,
 } from "react-icons/lu";
 
 export default function SettingsPage() {
@@ -31,7 +31,7 @@ export default function SettingsPage() {
 
   const { data: workspaces, isLoading: workspacesLoading } = useQuery({
     queryKey: ["workspaces"],
-    queryFn: () => getWorkspaces().then(res => res.data),
+    queryFn: () => getWorkspaces().then((res) => res.data),
     staleTime: 60 * 1000,
   });
 
@@ -114,7 +114,12 @@ export default function SettingsPage() {
               <div className="w-8 h-8 rounded-full bg-[var(--surface-hover)] flex items-center justify-center text-[var(--text-secondary)]">
                 <LuTags size={18} />
               </div>
-              <span className="font-medium" style={{ color: "var(--text-display)" }}>Kategori</span>
+              <span
+                className="font-medium"
+                style={{ color: "var(--text-display)" }}
+              >
+                Kategori
+              </span>
             </div>
             <LuChevronRight size={16} color="var(--text-secondary)" />
           </button>
@@ -126,21 +131,33 @@ export default function SettingsPage() {
               <div className="w-8 h-8 rounded-full bg-[var(--surface-hover)] flex items-center justify-center text-[var(--text-secondary)]">
                 <LuUsers size={18} />
               </div>
-              <span className="font-medium" style={{ color: "var(--text-display)" }}>Member</span>
+              <span
+                className="font-medium"
+                style={{ color: "var(--text-display)" }}
+              >
+                Member
+              </span>
             </div>
             <LuChevronRight size={16} color="var(--text-secondary)" />
           </button>
-          
+
           {workspaces && workspaces.length > 1 && (
             <button
-              onClick={() => window.dispatchEvent(new Event("open-workspace-modal"))}
+              onClick={() =>
+                window.dispatchEvent(new Event("open-workspace-modal"))
+              }
               className="w-full flex items-center justify-between p-4 hover:bg-[var(--surface-hover)] border border-[var(--border)] rounded-lg transition-colors text-left"
             >
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-full bg-[var(--surface-hover)] flex items-center justify-center text-[var(--text-secondary)]">
                   <LuBuilding size={18} />
                 </div>
-                <span className="font-medium" style={{ color: "var(--text-display)" }}>Ganti Workspace</span>
+                <span
+                  className="font-medium"
+                  style={{ color: "var(--text-display)" }}
+                >
+                  Ganti Workspace
+                </span>
               </div>
               <LuChevronRight size={16} color="var(--text-secondary)" />
             </button>

@@ -10,14 +10,11 @@ import { getPlans, createPlan, deletePlan } from "@/api/planApi";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { PageLayout } from "@/components/layout/PageLayout";
-import { PageBoneyard } from "@/components/boneyard/PageBoneyard";
+
 import { LoadingPage } from "@/components/layout/LoadingPage";
 import { useTheme } from "@/hooks/useTheme";
 import { useIncomeStore } from "@/store/income";
 import { useStorageStore } from "@/store/storage";
-import { formatCurrency } from "@/utils";
-import { CategorySelect } from "@/components/CategorySelect";
-import { DateRangePicker } from "@/components/DatePicker";
 import { PlanCard } from "@/components/plan/PlanCard";
 import { PlanFormModal } from "@/components/plan/PlanFormModal";
 import { LuClipboardList } from "react-icons/lu";

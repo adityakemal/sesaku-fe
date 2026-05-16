@@ -14,7 +14,6 @@ import { BottomNav } from "@/components/layout/BottomNav";
 import { DataActions } from "@/components/DataActions";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { PageLayout } from "@/components/layout/PageLayout";
-import { PageBoneyard } from "@/components/boneyard/PageBoneyard";
 import { LoadingPage } from "@/components/layout/LoadingPage";
 import { useTheme } from "@/hooks/useTheme";
 import { useIncomeStore } from "@/store/income";

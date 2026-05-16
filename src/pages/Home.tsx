@@ -16,7 +16,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { useIncomeStore } from "@/store/income";
 import { formatCurrency } from "@/utils";
 import { MonthNavigator } from "@/components/MonthNavigator";
-import { PageBoneyard } from "@/components/boneyard/PageBoneyard";
+
 import { LoadingPage } from "@/components/layout/LoadingPage";
 import {
   getDashboardSummary,

@@ -1,7 +1,6 @@
 import { useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
-import { Skeleton } from "boneyard-js/react";
 import { loginWithGoogle } from "@/api/authApi";
 import { useTheme } from "@/hooks/useTheme";
 
@@ -86,14 +85,6 @@ export default function Login() {
   }, [handleGoogleCredential]);
 
   return (
-    <Skeleton
-      name="page-login"
-      loading={googleMutation.isPending}
-      fallback={<LoginBoneyardFallback />}
-      fixture={<LoginBoneyardFallback />}
-      animate="shimmer"
-      transition={180}
-    >
     <div className="flex items-center justify-center p-4 inset-0 fixed w-full">
       <div
         className="w-full max-w-sm p-8  shadow-2xl space-y-8"
@@ -150,23 +141,40 @@ export default function Login() {
         </div>
       </div>
     </div>
-    </Skeleton>
   );
 }
 
 function LoginBoneyardFallback() {
   return (
-    <div className="flex items-center justify-center p-4 inset-0 fixed w-full" aria-hidden="true">
+    <div
+      className="flex items-center justify-center p-4 inset-0 fixed w-full"
+      aria-hidden="true"
+    >
       <div
         className="w-full max-w-sm p-8 shadow-2xl space-y-8"
-        style={{ background: "var(--surface)", border: "1px solid var(--border-visible)" }}
+        style={{
+          background: "var(--surface)",
+          border: "1px solid var(--border-visible)",
+        }}
       >
         <div className="space-y-3">
-          <div className="h-10 w-32 mx-auto rounded-lg" style={{ background: "var(--surface-raised)" }} />
-          <div className="h-4 w-56 mx-auto rounded-lg" style={{ background: "var(--surface-raised)" }} />
+          <div
+            className="h-10 w-32 mx-auto rounded-lg"
+            style={{ background: "var(--surface-raised)" }}
+          />
+          <div
+            className="h-4 w-56 mx-auto rounded-lg"
+            style={{ background: "var(--surface-raised)" }}
+          />
         </div>
-        <div className="h-11 w-full rounded-lg" style={{ background: "var(--surface-raised)" }} />
-        <div className="h-3 w-40 mx-auto rounded-lg" style={{ background: "var(--surface-raised)" }} />
+        <div
+          className="h-11 w-full rounded-lg"
+          style={{ background: "var(--surface-raised)" }}
+        />
+        <div
+          className="h-3 w-40 mx-auto rounded-lg"
+          style={{ background: "var(--surface-raised)" }}
+        />
       </div>
     </div>
   );

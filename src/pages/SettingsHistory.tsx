@@ -1,10 +1,8 @@
-
 import { useRef, useEffect } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { PageLayout } from "@/components/layout/PageLayout";
-import { PageBoneyard } from "@/components/boneyard/PageBoneyard";
 import { LoadingPage } from "@/components/layout/LoadingPage";
 import { getActivity, type ActivityLog } from "@/api/activityApi";
 import dayjs from "dayjs";
@@ -21,8 +19,10 @@ function getActionIcon(action: string): string {
 function getActionLabel(action: string): string {
   if (action === "login") return "Login";
   if (action === "logout") return "Logout";
-  if (action.includes("kategori")) return action.replace("kategori", "Kategori");
-  if (action.includes("transaksi")) return action.replace("transaksi", "Transaksi");
+  if (action.includes("kategori"))
+    return action.replace("kategori", "Kategori");
+  if (action.includes("transaksi"))
+    return action.replace("transaksi", "Transaksi");
   if (action.includes("budget")) return action.replace("budget", "Budget");
   return action;
 }
@@ -30,23 +30,17 @@ function getActionLabel(action: string): string {
 export default function SettingsHistory() {
   const sentinelRef = useRef<HTMLDivElement>(null);
 
-  const {
-    data,
-    isLoading,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-  } = useInfiniteQuery({
-    queryKey: ["activity"],
-    queryFn: ({ pageParam }) =>
-      getActivity(pageParam).then((res) => res.data),
-    getNextPageParam: (lastPage) =>
-      lastPage.hasMore ? lastPage.nextCursor : undefined,
-    initialPageParam: undefined as number | undefined,
-  });
+  const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } =
+    useInfiniteQuery({
+      queryKey: ["activity"],
+      queryFn: ({ pageParam }) =>
+        getActivity(pageParam).then((res) => res.data),
+      getNextPageParam: (lastPage) =>
+        lastPage.hasMore ? lastPage.nextCursor : undefined,
+      initialPageParam: undefined as number | undefined,
+    });
 
-  const logs: ActivityLog[] =
-    data?.pages.flatMap((page) => page.data) ?? [];
+  const logs: ActivityLog[] = data?.pages.flatMap((page) => page.data) ?? [];
 
   useEffect(() => {
     const sentinel = sentinelRef.current;
@@ -72,13 +66,19 @@ export default function SettingsHistory() {
       {logs.length === 0 ? (
         <div
           className="text-center py-12 rounded-xl"
-          style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
+          style={{
+            background: "var(--surface)",
+            border: "1px solid var(--border)",
+          }}
         >
           <div className="text-[40px] mb-3">📭</div>
           <p className="text-[14px]" style={{ color: "var(--text-disabled)" }}>
             Belum ada aktivitas
           </p>
-          <p className="text-[12px] mt-1" style={{ color: "var(--text-disabled)" }}>
+          <p
+            className="text-[12px] mt-1"
+            style={{ color: "var(--text-disabled)" }}
+          >
             Aktivitas akan tercatat saat kamu mulai menggunakan sesaKu
           </p>
         </div>
@@ -94,15 +94,23 @@ export default function SettingsHistory() {
                 <div
                   className="absolute -left-[23px] top-1.5 w-5 h-5 rounded-full flex items-center justify-center text-[11px]"
                   style={{
-                    background: log.status === "error" ? "rgba(215,25,33,0.15)" : "var(--surface-raised)",
+                    background:
+                      log.status === "error"
+                        ? "rgba(215,25,33,0.15)"
+                        : "var(--surface-raised)",
                     border: `1px solid ${log.status === "error" ? "var(--accent)" : "var(--border-visible)"}`,
                   }}
                 >
-                  <span className="leading-none">{getActionIcon(log.action)}</span>
+                  <span className="leading-none">
+                    {getActionIcon(log.action)}
+                  </span>
                 </div>
                 <div
                   className="p-3 rounded-xl"
-                  style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
+                  style={{
+                    background: "var(--surface)",
+                    border: "1px solid var(--border)",
+                  }}
                 >
                   <div className="flex items-center justify-between gap-2">
                     <span
@@ -121,7 +129,10 @@ export default function SettingsHistory() {
                     ) : (
                       <span
                         className="px-1.5 py-0.5 rounded text-[10px] font-bold"
-                        style={{ background: "rgba(74,158,92,0.15)", color: "var(--success)" }}
+                        style={{
+                          background: "rgba(74,158,92,0.15)",
+                          color: "var(--success)",
+                        }}
                       >
                         OK
                       </span>
@@ -146,7 +157,10 @@ export default function SettingsHistory() {
             ))}
           </div>
 
-          <div ref={sentinelRef} className="flex items-center justify-center py-6">
+          <div
+            ref={sentinelRef}
+            className="flex items-center justify-center py-6"
+          >
             {isFetchingNextPage ? (
               <div
                 className="w-5 h-5 rounded-full"
@@ -157,11 +171,17 @@ export default function SettingsHistory() {
                 }}
               />
             ) : hasNextPage ? (
-              <p className="text-[11px]" style={{ color: "var(--text-disabled)" }}>
+              <p
+                className="text-[11px]"
+                style={{ color: "var(--text-disabled)" }}
+              >
                 Scroll untuk memuat...
               </p>
             ) : (
-              <p className="text-[11px]" style={{ color: "var(--text-disabled)" }}>
+              <p
+                className="text-[11px]"
+                style={{ color: "var(--text-disabled)" }}
+              >
                 — Semua aktivitas telah dimuat —
               </p>
             )}
