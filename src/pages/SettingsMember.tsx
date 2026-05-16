@@ -5,6 +5,8 @@ import toast from "react-hot-toast";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { PageLayout } from "@/components/layout/PageLayout";
+import { PageBoneyard } from "@/components/boneyard/PageBoneyard";
+import { LoadingPage } from "@/components/layout/LoadingPage";
 import { getMembers, inviteMember, removeMember } from "@/api/memberApi";
 
 export default function SettingsMember() {
@@ -36,6 +38,8 @@ export default function SettingsMember() {
     },
     onError: () => toast.error("Gagal menghapus"),
   });
+
+  if (isLoading) return <LoadingPage />;
 
   return (
     <PageLayout>

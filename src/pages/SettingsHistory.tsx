@@ -4,6 +4,8 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { PageLayout } from "@/components/layout/PageLayout";
+import { PageBoneyard } from "@/components/boneyard/PageBoneyard";
+import { LoadingPage } from "@/components/layout/LoadingPage";
 import { getActivity, type ActivityLog } from "@/api/activityApi";
 import dayjs from "dayjs";
 
@@ -61,17 +63,13 @@ export default function SettingsHistory() {
     return () => observer.disconnect();
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
+  if (isLoading) return <LoadingPage />;
+
   return (
     <PageLayout>
       <AppHeader title="Riwayat Aktivitas" isShowDatepicker={false} />
 
-      {isLoading ? (
-        <div className="text-center py-12">
-          <p className="text-[13px]" style={{ color: "var(--text-disabled)" }}>
-            Memuat...
-          </p>
-        </div>
-      ) : logs.length === 0 ? (
+      {logs.length === 0 ? (
         <div
           className="text-center py-12 rounded-xl"
           style={{ background: "var(--surface)", border: "1px solid var(--border)" }}

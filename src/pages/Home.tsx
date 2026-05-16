@@ -16,6 +16,8 @@ import { useTheme } from "@/hooks/useTheme";
 import { useIncomeStore } from "@/store/income";
 import { formatCurrency } from "@/utils";
 import { MonthNavigator } from "@/components/MonthNavigator";
+import { PageBoneyard } from "@/components/boneyard/PageBoneyard";
+import { LoadingPage } from "@/components/layout/LoadingPage";
 import {
   getDashboardSummary,
   getCategoryBreakdown,
@@ -141,23 +143,7 @@ export default function Home() {
 
   const activeTrendCategory = selectedTrendCategoryMeta?.name ?? null;
 
-  if (!mounted) {
-    return (
-      <div
-        className="h-screen flex items-center justify-center"
-        style={{ background: "var(--black)" }}
-      >
-        <div
-          className="w-5 h-5 rounded-full"
-          style={{
-            border: "2px solid var(--accent)",
-            borderTopColor: "transparent",
-            animation: "spin 0.6s linear infinite",
-          }}
-        />
-      </div>
-    );
-  }
+  if (!mounted || summaryLoading) return <LoadingPage />;
 
   return (
     <PageLayout>

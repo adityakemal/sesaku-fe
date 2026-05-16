@@ -15,8 +15,10 @@ import { getCategories } from "./api/categoryApi";
 import { useIncomeStore } from "./store/income";
 import { useStorageStore } from "./store/storage";
 import WorkspaceModal from "./components/WorkspaceModal";
+import { LoadingPage } from "./components/layout/LoadingPage";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
+  const location = useLocation();
   const { data, isLoading } = useQuery({
     queryKey: ["session"],
     queryFn: () => checkSession().then((res) => res.data),
@@ -51,11 +53,7 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
     }
   }, [data, initialized]);
 
-  if (isLoading) {
-    return (
-      <div className="h-screen flex items-center justify-center bg-[var(--black)]"></div>
-    );
-  }
+  if (isLoading) return <LoadingPage />;
 
   return data ? <>{children}</> : <Navigate to="/login" />;
 }

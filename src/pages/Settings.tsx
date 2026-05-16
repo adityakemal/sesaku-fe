@@ -3,6 +3,8 @@ import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { PageLayout } from "@/components/layout/PageLayout";
+import { PageBoneyard } from "@/components/boneyard/PageBoneyard";
+import { LoadingPage } from "@/components/layout/LoadingPage";
 import { logoutUser } from "@/api/authApi";
 import { getWorkspaces } from "@/api/memberApi";
 import { useIncomeStore } from "@/store/income";
@@ -27,7 +29,7 @@ export default function SettingsPage() {
   const user = useStorageStore((s) => s.user);
   const setUser = useStorageStore((s) => s.setUser);
 
-  const { data: workspaces } = useQuery({
+  const { data: workspaces, isLoading: workspacesLoading } = useQuery({
     queryKey: ["workspaces"],
     queryFn: () => getWorkspaces().then(res => res.data),
     staleTime: 60 * 1000,
@@ -41,6 +43,8 @@ export default function SettingsPage() {
     localStorage.removeItem("sesaku_workspace_id");
     navigate("/login");
   };
+
+  if (workspacesLoading && !workspaces) return <LoadingPage />;
 
   return (
     <PageLayout>

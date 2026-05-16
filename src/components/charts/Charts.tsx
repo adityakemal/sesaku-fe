@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Doughnut, Bar, Line } from "react-chartjs-2";
+import { Doughnut, Bar, Line, Chart } from "react-chartjs-2";
 import {
   Chart as ChartJS,
   ArcElement,
@@ -11,9 +11,10 @@ import {
   PointElement,
   LineElement,
   LogarithmicScale,
+  LineController,
   Filler,
 } from "chart.js";
-import type { TooltipItem } from "chart.js";
+import type { ChartData, TooltipItem } from "chart.js";
 import dayjs from "dayjs";
 import type { CategoryBreakdownItem, SpendingTrendItem } from "@/api/statsApi";
 import { getChartColor } from "./colors";
@@ -28,6 +29,7 @@ ChartJS.register(
   PointElement,
   LineElement,
   LogarithmicScale,
+  LineController,
   Filler,
 );
 
@@ -434,8 +436,11 @@ export function SpendingTrendChart({
           return (
             <div style={{ overflowX: "auto", overflowY: "hidden" }}>
               <div style={{ minWidth: minChartW, height: 180 }}>
-                <Bar
-                  data={chartData as any}
+                <Chart
+                  type="bar"
+                  data={
+                    chartData as ChartData<"bar" | "line", number[], string>
+                  }
                   options={{
                     plugins: {
                       legend: { display: false },

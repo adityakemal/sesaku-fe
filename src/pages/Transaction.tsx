@@ -14,6 +14,8 @@ import { BottomNav } from "@/components/layout/BottomNav";
 import { DataActions } from "@/components/DataActions";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { PageLayout } from "@/components/layout/PageLayout";
+import { PageBoneyard } from "@/components/boneyard/PageBoneyard";
+import { LoadingPage } from "@/components/layout/LoadingPage";
 import { useTheme } from "@/hooks/useTheme";
 import { useIncomeStore } from "@/store/income";
 import { formatCurrency } from "@/utils";
@@ -92,23 +94,7 @@ export default function TransactionPage() {
 
   const remaining = totalIncome - totalTransaction;
 
-  if (!mounted) {
-    return (
-      <div
-        className="h-screen flex items-center justify-center"
-        style={{ background: "var(--black)" }}
-      >
-        <div
-          className="w-5 h-5 rounded-full"
-          style={{
-            border: "2px solid var(--accent)",
-            borderTopColor: "transparent",
-            animation: "spin 0.6s linear infinite",
-          }}
-        />
-      </div>
-    );
-  }
+  if (!mounted || isLoading) return <LoadingPage />;
 
   return (
     <PageLayout>

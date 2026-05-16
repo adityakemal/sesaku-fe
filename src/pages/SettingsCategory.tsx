@@ -3,6 +3,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { PageLayout } from "@/components/layout/PageLayout";
+import { PageBoneyard } from "@/components/boneyard/PageBoneyard";
+import { LoadingPage } from "@/components/layout/LoadingPage";
 import { getCategories, createCategory, updateCategory, deleteCategory } from "@/api/categoryApi";
 import { useStorageStore } from "@/store/storage";
 import { isDuplicateCategory } from "@/lib/utils";
@@ -94,6 +96,8 @@ export default function SettingsCategory() {
     setEditingCat(null);
     setEditName("");
   };
+
+  if (isLoading) return <LoadingPage />;
 
   return (
     <>

@@ -3,9 +3,23 @@ import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { configureBoneyard } from "boneyard-js/react";
 import { StoreInit } from "@/components/StoreInit";
 import App from "./App.tsx";
 import "./index.css";
+import "./bones/registry";
+
+configureBoneyard({
+  color: "#eeeeee",
+  darkColor: "#242424",
+  animate: "shimmer",
+  shimmerColor: "#f6f6f6",
+  darkShimmerColor: "#303030",
+  speed: "1.8s",
+  shimmerAngle: 110,
+  stagger: 40,
+  transition: 180,
+});
 
 export const queryClient = new QueryClient({
   defaultOptions: {
