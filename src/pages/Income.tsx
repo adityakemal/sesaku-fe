@@ -10,7 +10,8 @@ import {
   type DateRange,
 } from "@/components/DatePicker";
 import { useIncomeStore } from "@/store/income";
-import { LuPlus, LuEllipsisVertical } from "react-icons/lu";
+import { LuPlus, LuEllipsisVertical, LuWallet } from "react-icons/lu";
+import { EmptyState } from "@/components/EmptyState";
 import { formatCurrency } from "@/utils";
 import type { IncomeEntry } from "@/types";
 
@@ -92,14 +93,16 @@ export default function IncomePage() {
         </div>
 
         {monthEntries.length === 0 ? (
-          <div className="text-center py-8">
-            <p
-              className="text-[13px]"
-              style={{ color: "var(--text-disabled)" }}
-            >
-              Belum ada income di bulan ini.
-            </p>
-          </div>
+          <EmptyState
+            icon={<LuWallet size={28} color="var(--text-disabled)" />}
+            title="Belum ada income"
+            description="Catat pemasukan untuk memantau saldo dan arus keuanganmu."
+            actionLabel="Tambah Income"
+            onAction={() => {
+              setShowAddModal(true);
+              setAddKey((k) => k + 1);
+            }}
+          />
         ) : (
           <div
             className="overflow-x-auto rounded-xl"

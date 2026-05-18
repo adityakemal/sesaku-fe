@@ -9,13 +9,15 @@ import {
 } from "@/components/charts/Charts";
 import { getChartColor } from "@/components/charts/colors";
 import { BottomNav } from "@/components/layout/BottomNav";
-import { LuCircleAlert } from "react-icons/lu";
+import { LuCircleAlert, LuClipboardList, LuArrowRightLeft, LuWallet } from "react-icons/lu";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { useTheme } from "@/hooks/useTheme";
 import { useIncomeStore } from "@/store/income";
 import { formatCurrency } from "@/utils";
 import { MonthNavigator } from "@/components/MonthNavigator";
+import { EmptyState } from "@/components/EmptyState";
+import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
 
 import { LoadingPage } from "@/components/layout/LoadingPage";
 import {
@@ -152,7 +154,7 @@ export default function Home() {
     return trendData.reduce((max, d) => (d.total > max.total ? d : max));
   }, [trendData]);
 
-  if (!mounted || summaryLoading) return <LoadingPage />;
+  if (!mounted) return <LoadingPage />;
 
   return (
     <PageLayout>
@@ -162,6 +164,7 @@ export default function Home() {
       {/* ── 1. REALITA VS PLAN ── */}
       {activePlan ? (
         <div
+          data-tour="section-plan"
           className="rounded-xl overflow-hidden"
           style={{
             background: "var(--surface)",
@@ -334,89 +337,89 @@ export default function Home() {
       ) : (
         /* CTA — no plan yet */
         <div
-          className="p-4 rounded-xl flex items-center justify-between gap-3"
+          data-tour="section-plan"
+          className="rounded-xl overflow-hidden"
           style={{
             background: "var(--surface)",
             border: "1px dashed var(--border-visible)",
           }}
         >
-          <div>
-            <p
-              className="text-[14px] font-semibold"
-              style={{ color: "var(--text-display)" }}
-            >
-              Buat Plan Anggaran
-            </p>
-            <p
-              className="text-[12px] mt-0.5"
-              style={{ color: "var(--text-disabled)" }}
-            >
-              Bandingkan pengeluaran nyata dengan rencanamu
-            </p>
-          </div>
-          <button
-            onClick={() => navigate("/plan")}
-            className="flex-shrink-0 h-9 px-4 text-[12px] font-bold rounded-lg"
-            style={{ background: "var(--accent)", color: "white" }}
-          >
-            Atur Plan →
-          </button>
+          <EmptyState
+            icon={<LuClipboardList size={28} color="var(--text-disabled)" />}
+            title="Buat Plan Anggaran"
+            description="Bandingkan pengeluaran nyata dengan rencana anggaranmu setiap bulan."
+            actionLabel="Atur Plan →"
+            onAction={() => navigate("/plan")}
+          />
         </div>
       )}
 
       {/* ── 2. INCOME OVERVIEW (all-time) ── */}
-      <div className="p-4 rounded-xl" style={{ background: "var(--surface)" }}>
-        <div className="flex justify-between items-center mb-2 flex-wrap gap-2">
-          <div>
-            <p
-              className="text-[12px] font-medium mb-0.5"
-              style={{ color: "var(--text-secondary)" }}
-            >
-              Sisa Saldo
-            </p>
-            <p
-              className="text-2xl md:text-4xl font-bold font-display leading-none whitespace-nowrap"
-              style={{
-                color: remaining < 0 ? "var(--accent)" : "var(--text-display)",
-              }}
-            >
-              {formatCurrency(remaining)}
-            </p>
+      <div data-tour="section-income" className="rounded-xl overflow-hidden" style={{ background: "var(--surface)" }}>
+        {totalIncome > 0 ? (
+          <div className="p-4">
+            <div className="flex justify-between items-center mb-2 flex-wrap gap-2">
+              <div>
+                <p
+                  className="text-[12px] font-medium mb-0.5"
+                  style={{ color: "var(--text-secondary)" }}
+                >
+                  Sisa Saldo
+                </p>
+                <p
+                  className="text-2xl md:text-4xl font-bold font-display leading-none whitespace-nowrap"
+                  style={{
+                    color: remaining < 0 ? "var(--accent)" : "var(--text-display)",
+                  }}
+                >
+                  {formatCurrency(remaining)}
+                </p>
+              </div>
+              <div>
+                <p
+                  className="text-[12px] whitespace-nowrap"
+                  style={{ color: "var(--text-secondary)" }}
+                >
+                  {formatCurrency(totalTransaction)} / {formatCurrency(totalIncome)}
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2 items-center">
+              <div
+                className="h-2 w-full rounded-full overflow-hidden"
+                style={{ background: "var(--border)" }}
+              >
+                <div
+                  className="h-full rounded-full transition-all duration-500"
+                  style={{
+                    width: `${Math.min(progress, 100)}%`,
+                    background: getStatusColor(progress),
+                  }}
+                />
+              </div>
+              <p
+                className="text-[14px] font-mono font-bold whitespace-nowrap"
+                style={{ color: getStatusColor(progress) }}
+              >
+                {progress > 100 ? "Over " : ""}
+                {Math.min(progress, 999).toFixed(0)}%
+              </p>
+            </div>
           </div>
-          <div>
-            <p
-              className="text-[12px] whitespace-nowrap"
-              style={{ color: "var(--text-secondary)" }}
-            >
-              {formatCurrency(totalTransaction)} / {formatCurrency(totalIncome)}
-            </p>
-          </div>
-        </div>
-        <div className="flex gap-2 items-center">
-          <div
-            className="h-2 w-full rounded-full overflow-hidden"
-            style={{ background: "var(--border)" }}
-          >
-            <div
-              className="h-full rounded-full transition-all duration-500"
-              style={{
-                width: `${Math.min(progress, 100)}%`,
-                background: getStatusColor(progress),
-              }}
-            />
-          </div>
-          <p
-            className="text-[14px] font-mono font-bold whitespace-nowrap"
-            style={{ color: getStatusColor(progress) }}
-          >
-            {progress > 100 ? "Over " : ""}
-            {Math.min(progress, 999).toFixed(0)}%
-          </p>
-        </div>
+        ) : (
+          <EmptyState
+            icon={<LuWallet size={28} color="var(--text-disabled)" />}
+            title="Catat Income Pertamamu"
+            description="Tambahkan pemasukan untuk mulai memantau saldo dan pengeluaranmu."
+            actionLabel="Tambah Income →"
+            onAction={() => navigate("/income")}
+          />
+        )}
       </div>
 
       {/* ── 3. MONTHLY SPENDING SECTION ── */}
       <div
+        data-tour="section-monthly"
         className="rounded-xl overflow-hidden"
         style={{ background: "var(--surface)" }}
       >
@@ -698,19 +701,19 @@ export default function Home() {
             )}
 
             {rangeCount === 0 && (
-              <div className="p-8 text-center">
-                <p
-                  className="text-[13px]"
-                  style={{ color: "var(--text-disabled)" }}
-                >
-                  Belum ada transaksi bulan ini
-                </p>
-              </div>
+              <EmptyState
+                icon={<LuArrowRightLeft size={28} color="var(--text-disabled)" />}
+                title="Belum ada transaksi"
+                description={`Belum ada pengeluaran di ${selectedMonth.isSame(dayjs(), "month") ? "bulan ini" : selectedMonth.format("MMMM YYYY")}. Catat transaksimu!`}
+                actionLabel="Tambah Transaksi"
+                onAction={() => navigate("/transaction")}
+              />
             )}
           </>
         )}
       </div>
 
+      <OnboardingTour />
       <BottomNav />
     </PageLayout>
   );

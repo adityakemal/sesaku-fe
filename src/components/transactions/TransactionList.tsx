@@ -7,7 +7,9 @@ import {
   LuChevronUp,
   LuChevronDown,
   LuEllipsisVertical,
+  LuArrowRightLeft,
 } from "react-icons/lu";
+import { EmptyState } from "@/components/EmptyState";
 import { formatCurrency } from "@/utils";
 import { useIncomeStore } from "@/store/income";
 import { TransactionFormModal } from "./TransactionFormModal";
@@ -45,12 +47,11 @@ export function TransactionList({ transactions }: TransactionListProps) {
 
   if (transactions.length === 0) {
     return (
-      <div className="text-center py-10">
-        <p className="text-[14px]" style={{ color: "var(--text-disabled)" }}>
-          Belum ada transaksi di periode ini. <br />
-          Pastikan rentang tanggal sudah sesuai ya!
-        </p>
-      </div>
+      <EmptyState
+        icon={<LuArrowRightLeft size={28} color="var(--text-disabled)" />}
+        title="Belum ada transaksi"
+        description="Belum ada transaksi di periode ini. Pastikan rentang tanggal sudah sesuai ya!"
+      />
     );
   }
 

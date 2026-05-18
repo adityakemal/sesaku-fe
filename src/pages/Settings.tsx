@@ -9,6 +9,7 @@ import { logoutUser } from "@/api/authApi";
 import { getWorkspaces } from "@/api/memberApi";
 import { useIncomeStore } from "@/store/income";
 import { useStorageStore } from "@/store/storage";
+import { useOnboardingStore } from "@/store/onboarding";
 import { useTheme } from "@/hooks/useTheme";
 import {
   LuChevronRight,
@@ -19,6 +20,7 @@ import {
   LuLogOut,
   LuInfo,
   LuMessageCircle,
+  LuRefreshCw,
 } from "react-icons/lu";
 
 export default function SettingsPage() {
@@ -28,6 +30,7 @@ export default function SettingsPage() {
   const resetStore = useIncomeStore((s) => s.resetStore);
   const user = useStorageStore((s) => s.user);
   const setUser = useStorageStore((s) => s.setUser);
+  const resetTour = useOnboardingStore((s) => s.resetTour);
 
   const { data: workspaces, isLoading: workspacesLoading } = useQuery({
     queryKey: ["workspaces"],
@@ -230,6 +233,26 @@ export default function SettingsPage() {
                   style={{ color: "var(--text-display)" }}
                 >
                   Bantuan & Dukungan
+                </span>
+              </div>
+              <LuChevronRight size={16} color="var(--text-secondary)" />
+            </button>
+            <button
+              onClick={() => {
+                resetTour();
+                navigate("/");
+              }}
+              className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors text-left"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-[var(--surface)] flex items-center justify-center text-[var(--text-secondary)]">
+                  <LuRefreshCw size={18} />
+                </div>
+                <span
+                  className="font-medium"
+                  style={{ color: "var(--text-display)" }}
+                >
+                  Ulangi Tour
                 </span>
               </div>
               <LuChevronRight size={16} color="var(--text-secondary)" />

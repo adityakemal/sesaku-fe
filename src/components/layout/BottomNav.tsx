@@ -5,6 +5,7 @@ const NAV_ITEMS = [
   {
     href: "/",
     label: "Dashboard",
+    tourId: "nav-dashboard",
     icon: (active: boolean) => (
       <LuLayoutDashboard size={22} color={active ? "var(--accent)" : "var(--text-secondary)"} />
     ),
@@ -12,6 +13,7 @@ const NAV_ITEMS = [
   {
     href: "/transaction",
     label: "Transaksi",
+    tourId: "nav-transaction",
     icon: (active: boolean) => (
       <LuArrowRightLeft size={22} color={active ? "var(--accent)" : "var(--text-secondary)"} />
     ),
@@ -19,6 +21,7 @@ const NAV_ITEMS = [
   {
     href: "/income",
     label: "Income",
+    tourId: "nav-income",
     icon: (active: boolean) => (
       <LuCircleArrowDown size={22} color={active ? "var(--accent)" : "var(--text-secondary)"} />
     ),
@@ -26,6 +29,7 @@ const NAV_ITEMS = [
   {
     href: "/plan",
     label: "Plan",
+    tourId: "nav-plan",
     icon: (active: boolean) => (
       <LuClipboardList size={22} color={active ? "var(--accent)" : "var(--text-secondary)"} />
     ),
@@ -33,6 +37,7 @@ const NAV_ITEMS = [
   {
     href: "/settings",
     label: "Pengaturan",
+    tourId: "nav-settings",
     icon: (active: boolean) => (
       <LuSettings size={22} color={active ? "var(--accent)" : "var(--text-secondary)"} />
     ),
@@ -59,6 +64,7 @@ export function BottomNav() {
             <Link
               key={item.href}
               to={item.href}
+              data-tour={item.tourId}
               className="flex-1 flex flex-col items-center gap-1 py-3"
               style={{ textDecoration: "none" }}
             >

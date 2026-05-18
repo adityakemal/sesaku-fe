@@ -18,6 +18,7 @@ import { useStorageStore } from "@/store/storage";
 import { PlanCard } from "@/components/plan/PlanCard";
 import { PlanFormModal } from "@/components/plan/PlanFormModal";
 import { LuClipboardList } from "react-icons/lu";
+import { EmptyState } from "@/components/EmptyState";
 import type { Plan as PlanType, PlanItem } from "@/types";
 
 const PAGE_LIMIT = 15;
@@ -213,22 +214,13 @@ export default function PlanPage() {
           </div>
         ) : (
           !showForm && (
-            <div className="flex flex-col items-center justify-center py-20 gap-3">
-              <LuClipboardList size={40} color="var(--text-disabled)" />
-              <p
-                className="text-[13px]"
-                style={{ color: "var(--text-disabled)" }}
-              >
-                Belum ada plan
-              </p>
-              <button
-                onClick={openForm}
-                className="h-10 px-5 text-[13px] font-bold rounded-xl"
-                style={{ background: "var(--accent)", color: "white" }}
-              >
-                Buat Plan Pertama
-              </button>
-            </div>
+            <EmptyState
+              icon={<LuClipboardList size={28} color="var(--text-disabled)" />}
+              title="Belum ada plan"
+              description="Buat rencana anggaran untuk membandingkan pengeluaran nyata dengan targetmu."
+              actionLabel="Buat Plan Pertama"
+              onAction={openForm}
+            />
           )
         )}
       </div>
