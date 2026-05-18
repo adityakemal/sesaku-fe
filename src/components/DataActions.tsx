@@ -260,10 +260,20 @@ export function DataActions({ dateRange }: DataActionsProps) {
     let processFile = file;
 
     // OCR.space supported types
-    const supportedTypes = ["image/jpeg", "image/png", "image/gif", "image/bmp", "image/tiff", "application/pdf"];
-    
+    const supportedTypes = [
+      "image/jpeg",
+      "image/png",
+      "image/gif",
+      "image/bmp",
+      "image/tiff",
+      "application/pdf",
+    ];
+
     // Skip compression if file is already under 500KB AND is a supported type
-    if (processFile.size <= 500 * 1024 && supportedTypes.includes(processFile.type.toLowerCase())) {
+    if (
+      processFile.size <= 500 * 1024 &&
+      supportedTypes.includes(processFile.type.toLowerCase())
+    ) {
       return processFile;
     }
 
@@ -304,7 +314,11 @@ export function DataActions({ dateRange }: DataActionsProps) {
               if (!ctx) return res(null);
               ctx.drawImage(img, 0, 0, w, h);
               // Pertahankan tipe asli, fallback ke jpeg
-              canvas.toBlob((blob) => res(blob), processFile.type || "image/jpeg", q);
+              canvas.toBlob(
+                (blob) => res(blob),
+                processFile.type || "image/jpeg",
+                q,
+              );
             });
           };
 
@@ -330,7 +344,10 @@ export function DataActions({ dateRange }: DataActionsProps) {
               lastModified: Date.now(),
             });
 
-            if (compressedFile.size > processFile.size && processFile.size <= MAX_FILE_SIZE) {
+            if (
+              compressedFile.size > processFile.size &&
+              processFile.size <= MAX_FILE_SIZE
+            ) {
               resolve(processFile);
             } else {
               resolve(compressedFile);
@@ -433,7 +450,7 @@ export function DataActions({ dateRange }: DataActionsProps) {
                 background: "transparent",
               }}
             >
-              Contoh Format
+              Contoh Format CSV
             </button>
             <button
               onClick={() => setExportModalOpen(true)}
@@ -460,13 +477,14 @@ export function DataActions({ dateRange }: DataActionsProps) {
             </button>
             <button
               onClick={handleOcrClick}
-              className="w-full h-11 text-[13px] font-bold rounded-lg"
+              className="w-full h-11 text-[13px] font-bold rounded-lg flex items-center justify-center gap-1.5"
               style={{
                 border: "1px solid var(--border-visible)",
                 color: "white",
                 background: "var(--accent)",
               }}
             >
+              <LuScan size={14} />
               Scan Struk
             </button>
           </div>
@@ -577,12 +595,13 @@ export function DataActions({ dateRange }: DataActionsProps) {
                   className="text-[12px] mb-2 font-medium"
                   style={{ color: "var(--text-secondary)" }}
                 >
-                  Pilih rentang tanggal data yang ingin diunduh
+                  Pilih rentang tanggal data yang ingin diunduh (Maks 1 Tahun)
                 </p>
                 <DateRangePicker
                   range={exportRange}
                   onChange={setExportRange}
                   placeholder="Pilih tanggal..."
+                  maxRangeDays={365}
                 />
               </div>
 
